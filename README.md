@@ -16,18 +16,18 @@ that manages water quality in the Long Creek watershed on behalf of about 130
 land owners.
 
 The Long Creek Watershed, almost three and a half square miles in area, is
-dominated by commercial land use. The Maine Mall is one of the largest land
-owners in the watershed, and it is surrounded by a range of commercial
+dominated by commercial land use. The Maine Mall is one of the largest
+landowners in the watershed, and it is surrounded by a range of commercial
 businesses, from medical offices, to car washes.  About a third of the watershed
 in impervious surfaces like roads, parking lots, and rooftops.
 
 Landowners with an acre or more of impervious area are required to get a Clean
 Water Act permit for stormwater discharges from their property.  The LCWMD
-provides an alternative for landowners to working to receive an individual
-permit. Landowners who elect to participate in the The Long Creek Watershed
-Management District receive a General Permit, in return for providing funding to
-the District, and facilitating the work of the district by permitting access to
-their property for certain activities.
+provides an alternative for landowners who otherwise would have to get an
+individual permit. Landowners who elect to participate in the The Long Creek
+Watershed Management District receive a General Permit, in return for providing
+funding to the District, and facilitating the work of the district by permitting
+access to their property for certain activities.
 
 For more information on LCWMD, see [their web site](https://restorelongcreek.org).
 
@@ -72,7 +72,7 @@ clarity.
 In some notebooks included in this archive, we ask  whether water quality 
 criteria have been  met.
 
-In this Archiive a "TRUE" value consistently implies that water quality criteria
+In this Archive a "TRUE" value consistently implies that water quality criteria
 were met or exceeded, whether that is achieved by a value higher than or lower
 than some numeric criteria.  "TRUE" implies good conditions.  "FALSE" implies 
 bad conditions.
@@ -102,8 +102,8 @@ The relevant thresholds are:
 *   Chloride CCC  = 230  mg/l
 *   Chloride CMC  = 860  mg/l
 
-In practice, chloride in Long Creek are indirectly estimated based on 
-measurement of conductivity.  The chloride-conductivity correlations is fairly
+In practice, chloride levels in Long Creek are indirectly estimated based on 
+measurement of conductivity.  The chloride-conductivity correlations are fairly
 close and robust, but estimation is an additional source of error, although 
 generally on the level of 10% or less.
 
@@ -112,7 +112,7 @@ There are no legally binding Maine criteria for maximum stream temperature, but
 we can back into thresholds based on research on thermal tolerance of brook
 trout in streams. A study from Michigan and Wisconsin, showed that trout are
 found in streams with daily mean water temperatures as high as 25.3°C, but only
-if the period of exceedence of that daily average temperature is short – only
+if the period of exceedance of that daily average temperature is short – only
 one day. Similarly, the one day daily maximum temperature above which trout were
 never found was 27.6°C. That generates two temperature criteria, one for daily
 averages, and one for daily maximums. 
