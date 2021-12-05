@@ -3,16 +3,18 @@ Summary of Analysis of LCWMD Dissolved Oxygen Data
 Curtis C. Bohlen, Casco Bay Estuary Partnership.
 Revised 11/02/2021
 
+-   [Introduction](#introduction)
+    -   [Weather-Corrected Marginal
+        Means](#weather-corrected-marginal-means)
 -   [Import Libraries](#import-libraries)
 -   [Data Preparation](#data-preparation)
     -   [Initial Folder References](#initial-folder-references)
-    -   [Load Weather Data](#load-weather-data)
     -   [Load Data on Sites and Impervious
         Cover](#load-data-on-sites-and-impervious-cover)
     -   [Load Main Data](#load-main-data)
         -   [Cleanup](#cleanup)
     -   [Data Corrections](#data-corrections)
-        -   [Anomolous Depth Values](#anomolous-depth-values)
+        -   [Anomalous Depth Values](#anomalous-depth-values)
         -   [Single S06B Chloride Observation from
             2017](#single-s06b-chloride-observation-from-2017)
         -   [Anomolous Dissolved Oxygen and Chloride
@@ -30,39 +32,61 @@ Revised 11/02/2021
         -   [Structure of the Smoother](#structure-of-the-smoother)
         -   [Diagnostic Plots](#diagnostic-plots)
         -   [Estimated Marginal Means](#estimated-marginal-means)
-    -   [Simplified Model](#simplified-model)
+-   [Hierarchical Analysis of Trends](#hierarchical-analysis-of-trends)
+    -   [Model 1 : Site by Year
+        interaction](#model-1--site-by-year-interaction)
         -   [ANOVA](#anova-1)
         -   [Summary](#summary-1)
         -   [Estimated Daily
             Autocorrelation](#estimated-daily-autocorrelation-1)
         -   [Structure of the Smoother](#structure-of-the-smoother-1)
-        -   [Diagnostic Plots](#diagnostic-plots-1)
-        -   [Estimated Marginal Means](#estimated-marginal-means-1)
--   [Compare Marginal Means From Two
-    Models](#compare-marginal-means-from-two-models)
-    -   [Calculate Observed Averages](#calculate-observed-averages)
-    -   [By Site](#by-site-2)
-    -   [By Year](#by-year-2)
--   [Hierarchical Analysis of Trends](#hierarchical-analysis-of-trends)
-    -   [Model 1 : Site by Year
-        interaction](#model-1--site-by-year-interaction)
+        -   [Examine Marginal Means](#examine-marginal-means)
+    -   [Model 2: No Interaction](#model-2-no-interaction)
         -   [ANOVA](#anova-2)
         -   [Summary](#summary-2)
         -   [Estimated Daily
             Autocorrelation](#estimated-daily-autocorrelation-2)
         -   [Structure of the Smoother](#structure-of-the-smoother-2)
-        -   [Examine Marginal Means](#examine-marginal-means)
-    -   [Model 2: No Interaction](#model-2-no-interaction)
-        -   [ANOVA](#anova-3)
-        -   [Summary](#summary-3)
-        -   [Estimated Daily
-            Autocorrelation](#estimated-daily-autocorrelation-3)
-        -   [Structure of the Smoother](#structure-of-the-smoother-3)
         -   [Examine Marginal Means](#examine-marginal-means-1)
 
 <img
     src="https://www.cascobayestuary.org/wp-content/uploads/2014/04/logo_sm.jpg"
     style="position:absolute;top:10px;right:50px;" />
+
+# Introduction
+
+This R Notebook explores several models for analyzing dissolved oxygen
+levels in Long Creek. The focus is on GAM models and their mixed model
+cousins, GAMMs. All models are fit with autocorrelated error terms.
+
+## Weather-Corrected Marginal Means
+
+We use a (relatively) simple GAM model, developed in the “DO
+Analysis.rmd” notebook available in the more complete data analysis
+[archive](https://github.com/CBEP-SoCB-Details/LCWMD_Monitoring). to
+evaluate sources of variation in dissolved oxygen and extract
+(temperature corrected) marginal means.
+
+We examined significantly more complex models, but we prefer model
+simplicity for the sake of communication to State of Casco Bay
+audiences.
+
+We use a model of the form:
+
+Oxygen = *f*(Covariates) + *g*(Predictors) + Error
+
+Where: \* Covariates enter into the model either via linear functions or
+spline smoothers. Predictors include: – natural log of the depth of
+water (in meters) at Site S05, in mid-watershed, and – the local daily
+median water temperature at each monitoring Site.
+
+-   The predictors enter the model via linear functions of:  
+    – site,  
+    – year,  
+    – time of year (Month in the models we consider here)
+
+-   The error includes both *i.i.d* normal error and an AR(1)
+    autocorrelated error.
 
 # Import Libraries
 
@@ -71,13 +95,11 @@ library(tidyverse)
 #> Warning: package 'tidyverse' was built under R version 4.0.5
 #> -- Attaching packages --------------------------------------- tidyverse 1.3.1 --
 #> v ggplot2 3.3.5     v purrr   0.3.4
-#> v tibble  3.1.4     v dplyr   1.0.7
-#> v tidyr   1.1.3     v stringr 1.4.0
-#> v readr   2.0.1     v forcats 0.5.1
+#> v tibble  3.1.6     v dplyr   1.0.7
+#> v tidyr   1.1.4     v stringr 1.4.0
+#> v readr   2.1.0     v forcats 0.5.1
 #> Warning: package 'ggplot2' was built under R version 4.0.5
-#> Warning: package 'tibble' was built under R version 4.0.5
 #> Warning: package 'tidyr' was built under R version 4.0.5
-#> Warning: package 'readr' was built under R version 4.0.5
 #> Warning: package 'dplyr' was built under R version 4.0.5
 #> Warning: package 'forcats' was built under R version 4.0.5
 #> -- Conflicts ------------------------------------------ tidyverse_conflicts() --
@@ -90,13 +112,14 @@ library(emmeans) # Provides tools for calculating marginal means
 #library(nlme)
 
 library(mgcv)    # generalized additive models. Function gamm() allows
+#> Warning: package 'mgcv' was built under R version 4.0.5
 #> Loading required package: nlme
 #> 
 #> Attaching package: 'nlme'
 #> The following object is masked from 'package:dplyr':
 #> 
 #>     collapse
-#> This is mgcv 1.8-36. For overview type 'help("mgcv-package")'.
+#> This is mgcv 1.8-38. For overview type 'help("mgcv-package")'.
                  # autocorrelation.
 
 library(CBEPgraphics)
@@ -114,25 +137,6 @@ parent      <- dirname(getwd())
 sibling     <- file.path(parent,sibfldnm)
 
 dir.create(file.path(getwd(), 'models'), showWarnings = FALSE)
-```
-
-## Load Weather Data
-
-``` r
-fn <- "Portland_Jetport_2009-2019.csv"
-fpath <- file.path(sibling, fn)
-
-weather_data <- read_csv(fpath, 
- col_types = cols(.default = col_skip(),
-        date = col_date(),
-        PRCP = col_number(), PRCPattr = col_character() #,
-        #SNOW = col_number(), SNOWattr = col_character(), 
-        #TMIN = col_number(), TMINattr = col_character(), 
-        #TAVG = col_number(), TAVGattr = col_character(), 
-        #TMAX = col_number(), TMAXattr = col_character(), 
-        )) %>%
-  rename(sdate = date) %>%
-  mutate(pPRCP = dplyr::lag(PRCP))
 ```
 
 ## Load Data on Sites and Impervious Cover
@@ -160,6 +164,7 @@ Site_IC_Data <- read_csv(fpath) %>%
 #> 
 #> i Use `spec()` to retrieve the full column specification for this data.
 #> i Specify the column types or set `show_col_types = FALSE` to quiet this message.
+
 # Now, create a factor that preserves the order of rows (roughly upstream to downstream). 
 Site_IC_Data <- Site_IC_Data %>%
   mutate(Site = factor(Site, levels = Site_IC_Data$Site))
@@ -208,13 +213,13 @@ full_data <- read_csv(fpath,
 ### Cleanup
 
 ``` r
-rm(Site_IC_Data, weather_data)
+rm(Site_IC_Data)
 rm(fn, fpath, parent, sibling, sibfldnm)
 ```
 
 ## Data Corrections
 
-### Anomolous Depth Values
+### Anomalous Depth Values
 
 Several depth observations in the record appear highly unlikely. In
 particular, several observations show daily median water depths over 15
@@ -249,12 +254,15 @@ any year other than 2013. While we do not know if the data point is
 legitimate or not, it has very high leverage in several models, and we
 suspect a transcription error of some sort.
 
-``` rshow_bad_obs
+``` r
 full_data %>%
   filter(Site == 'S06B') %>%
   select(sdate, DO_Median) %>%
   ggplot(aes(x = sdate, y = DO_Median)) + geom_point()
+#> Warning: Removed 163 rows containing missing values (geom_point).
 ```
+
+<img src="DO_Analysis_Summary_files/figure-gfm/show_bad_obs-1.png" style="display: block; margin: auto;" />
 
 We remove the Chloride value from the data.
 
@@ -483,8 +491,6 @@ if (! file.exists("models/do_gamm.rds")) {
 } else {
   do_gamm <- readRDS("models/do_gamm.rds")
 }
-#>    user  system elapsed 
-#>  663.38    2.83  666.94
 ```
 
 ### ANOVA
@@ -509,6 +515,10 @@ anova(do_gamm$gam)
 #>                edf Ref.df    F p-value
 #> s(FlowIndex) 7.382  7.382 31.2  <2e-16
 ```
+
+We can conclude that all the terms in the model are important, but we
+need to be careful interpreting the results, as sampling history varied
+site to site.
 
 ### Summary
 
@@ -559,6 +569,14 @@ summary(do_gamm$gam)
 #>   Scale est. = 1.9144    n = 6113
 ```
 
+Again, all predictors and covariates are important. We look more closely
+at the implied patterns by looking at “marginal means”. Marginal means
+(also known as “least squares Means” in SAS) are predicted means based
+on a specific model. They are “marginal” because they are calculated by
+ignoring certain covariates, usually either by calculating predicted
+values holding other predictors fixed, otr averaging predictors across
+covariates.
+
 ### Estimated Daily Autocorrelation
 
 ``` r
@@ -568,6 +586,8 @@ summary(do_gamm$lme)$modelStruct$corStruct
 #> 0.9093786
 ```
 
+Median daily dissolved oxygen values are highly autocorrelated.
+
 ### Structure of the Smoother
 
 ``` r
@@ -575,6 +595,11 @@ plot(do_gamm$gam)
 ```
 
 <img src="DO_Analysis_Summary_files/figure-gfm/smoother_first_gamm-1.png" style="display: block; margin: auto;" />
+
+Dissolved oxygen is related to stream flow, but in a non-linear way.
+Under low to moderate stream flows, dissolved oxygen is correlated with
+flow, climbing rapidly with flow. But when flow is high, dissolved
+oxygen levels are unrelated to flow.
 
 ### Diagnostic Plots
 
@@ -597,7 +622,7 @@ gam.check(do_gamm$gam)
     #> indicate that k is too low, especially if edf is close to k'.
     #> 
     #>                k'  edf k-index p-value    
-    #> s(FlowIndex) 9.00 7.38    0.89  <2e-16 ***
+    #> s(FlowIndex) 9.00 7.38    0.87  <2e-16 ***
     #> ---
     #> Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 
@@ -606,18 +631,17 @@ which are our highest priority in many ways – are rather poorly modeled.
 And it is clear the assumptions of normality are not met, especially for
 those low values.
 
-For careful work, we should probably use bootstrapped confidence
-intervals or something similar, but given how long these models take to
-fit, that is not practical. Besides, it is probably overkill for our
-needs, as relationships are generally highly significant and sample
-sizes large.
+For careful work, we should use bootstrapped confidence intervals, but
+given how long these models take to fit, that is not practical. Besides,
+it is probably overkill for our needs, as relationships are generally
+highly significant and sample sizes large.
 
 ### Estimated Marginal Means
 
-Reliably calling `emmeans()` for `gamm()` models requires creating a
-call object and associating it with the model (e.g., as
-`do_gamm$gam$call`). (See the `emmeans` “models” vignette for more info,
-although not all strategies recommended there worked for us).
+Calling `emmeans()` for `gamm()` models requires creating a call object
+and associating it with the model (e.g., as `do_gamm$gam$call`). (See
+the `emmeans` “models” vignette for more info, although not all
+strategies recommended there worked for us).
 
 We first create the call object, then associate it with the model, and
 finally manually construct a reference grid before calling `emmeans()`
@@ -677,6 +701,11 @@ plot(by_month) +
 
 <img src="DO_Analysis_Summary_files/figure-gfm/plot_ls_means_month_first_GAMM-1.png" style="display: block; margin: auto;" />
 
+While marginal means (across all sites) are above thresholds, there is a
+clear seasonal pattern with lower dissolved oxygen in the warmer months
+(as expected). Note that these marginal means are adjusted for
+temperature and stream flow.
+
 #### By Site
 
 ``` r
@@ -706,6 +735,12 @@ plot(by_site) +
 ```
 
 <img src="DO_Analysis_Summary_files/figure-gfm/plot_ls_means_site_first_GAMM-1.png" style="display: block; margin: auto;" />
+
+Note the relatively high (adjusted) marginal means. These represent
+year-round averages, and do not reflect seasonal patterns. Several sites
+often have low summer dissolved oxygen levels, especially under low flow
+conditions, but those details are buried here looking only at marginal
+means.
 
 #### By Year
 
@@ -745,319 +780,19 @@ plot(by_year) +
 for months, the 2010 estimate may be misleading. Since then, basically,
 2016 is way worse than the other years.
 
-## Simplified Model
-
-We drop the MONTH term and the FLOW term. We refit the water temperature
-term as a low dimensional smooth, because we need to include at least
-one smoother in the GAMM model.
-
-``` r
-if (! file.exists("models/do_gamm_2.rds")) {
-  print(
-    system.time(
-      do_gamm_2<- gamm(DO_Median ~ Site + 
-                        s(T_Median, k = 1) +
-                        Year_f,
-                       correlation = corAR1(form = ~ as.numeric(sdate) | Site),
-                       na.action = na.omit, 
-                       method = 'REML',
-                       data = full_data)
-    )
-  )
-  saveRDS(do_gamm_2, file="models/do_gamm_2.rds")
-} else {
-  do_gamm_2 <- readRDS("models/do_gamm_2.rds")
-}
-#> Warning in smooth.construct.tp.smooth.spec(object, dk$data, dk$knots): basis dimension, k, increased to minimum possible
-#>    user  system elapsed 
-#> 2464.52    5.08 2471.01
-```
-
-### ANOVA
-
-``` r
-anova(do_gamm_2$gam)
-#> 
-#> Family: gaussian 
-#> Link function: identity 
-#> 
-#> Formula:
-#> DO_Median ~ Site + s(T_Median, k = 1) + Year_f
-#> 
-#> Parametric Terms:
-#>        df     F  p-value
-#> Site    5 4.433 0.000492
-#> Year_f  8 5.505 5.84e-07
-#> 
-#> Approximate significance of smooth terms:
-#>               edf Ref.df    F p-value
-#> s(T_Median) 1.988  1.988 1387  <2e-16
-```
-
-### Summary
-
-``` r
-summary(do_gamm_2$gam)
-#> 
-#> Family: gaussian 
-#> Link function: identity 
-#> 
-#> Formula:
-#> DO_Median ~ Site + s(T_Median, k = 1) + Year_f
-#> 
-#> Parametric coefficients:
-#>             Estimate Std. Error t value Pr(>|t|)    
-#> (Intercept)   8.8219     0.3146  28.046  < 2e-16 ***
-#> SiteS06B     -0.2129     0.2688  -0.792 0.428214    
-#> SiteS05      -0.4118     0.3500  -1.176 0.239483    
-#> SiteS17       0.4803     0.3028   1.586 0.112719    
-#> SiteS03       0.6811     0.2263   3.010 0.002620 ** 
-#> SiteS01       0.4747     0.2262   2.098 0.035895 *  
-#> Year_f2011   -0.1376     0.3773  -0.365 0.715255    
-#> Year_f2012   -0.5977     0.3892  -1.536 0.124673    
-#> Year_f2013   -0.4944     0.3562  -1.388 0.165158    
-#> Year_f2014   -1.0697     0.3553  -3.010 0.002618 ** 
-#> Year_f2015   -0.6599     0.3693  -1.787 0.074024 .  
-#> Year_f2016   -1.8716     0.3660  -5.114 3.22e-07 ***
-#> Year_f2017   -0.7504     0.3574  -2.100 0.035799 *  
-#> Year_f2018   -1.2232     0.3663  -3.340 0.000842 ***
-#> ---
-#> Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
-#> 
-#> Approximate significance of smooth terms:
-#>               edf Ref.df    F p-value    
-#> s(T_Median) 1.988  1.988 1387  <2e-16 ***
-#> ---
-#> Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
-#> 
-#> R-sq.(adj) =  0.662   
-#>   Scale est. = 2.3788    n = 8263
-```
-
-### Estimated Daily Autocorrelation
-
-``` r
-summary(do_gamm_2$lme)$modelStruct$corStruct
-#> Correlation structure of class corARMA representing
-#>      Phi1 
-#> 0.9196764
-```
-
-### Structure of the Smoother
-
-``` r
-plot(do_gamm_2$gam)
-```
-
-<img src="DO_Analysis_Summary_files/figure-gfm/smoother_second_GAMM-1.png" style="display: block; margin: auto;" />
-
-### Diagnostic Plots
-
-``` r
-gam.check(do_gamm_2$gam)
-```
-
-<img src="DO_Analysis_Summary_files/figure-gfm/diagnostics_second_GAMM-1.png" style="display: block; margin: auto;" />
-
-    #> 
-    #> 'gamm' based fit - care required with interpretation.
-    #> Checks based on working residuals may be misleading.
-    #> Basis dimension (k) checking results. Low p-value (k-index<1) may
-    #> indicate that k is too low, especially if edf is close to k'.
-    #> 
-    #>               k'  edf k-index p-value    
-    #> s(T_Median) 2.00 1.99    0.85  <2e-16 ***
-    #> ---
-    #> Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
-
-The model has essentially the same inadequacies as the prior model.
-
-### Estimated Marginal Means
-
-We again create the call object, and associate it with the model, and
-finally manually construct a reference grid before calling `emmeans()`
-to extract marginal means. We explicitly specify that we want the
-marginal means estimated at Year = 2014.
-
-``` r
-the_call <-  quote(gamm(DO_Median ~ Site + 
-                        s(T_Median, k = 1) +
-                        Year_f,
-                       correlation = corAR1(form = ~ as.numeric(sdate) | Site),
-                       na.action = na.omit, 
-                       method = 'REML',
-                       data = full_data))
-do_gamm_2$gam$call <- the_call
-my_ref_grid <- ref_grid(do_gamm_2, cov.reduce = median) 
-```
-
-#### By Site
-
-``` r
-(by_site_2 <- summary(emmeans(my_ref_grid, ~ Site)))
-#>  Site emmean    SE   df lower.CL upper.CL
-#>  S07    7.65 0.164 8247     7.33     7.97
-#>  S06B   7.44 0.217 8247     7.01     7.86
-#>  S05    7.24 0.309 8247     6.63     7.85
-#>  S17    8.13 0.258 8247     7.62     8.64
-#>  S03    8.33 0.158 8247     8.02     8.64
-#>  S01    8.13 0.158 8247     7.81     8.44
-#> 
-#> Results are averaged over the levels of: Year_f 
-#> Confidence level used: 0.95
-```
-
-``` r
-plot(by_site_2) + 
-  xlab('DO (mg/l)\n(Flow and Temperature Adjusted)') +
-  ylab("Upstream         Main Stem          Lower Tribs") +
-  #annotate('text', 11, 2.5, label = labl, size = 3) +
-  xlim(0,12) +
-  geom_vline(xintercept =  7, color = 'orange') +
-  geom_vline(xintercept =  5, color = 'red') +
-  coord_flip() +
-  theme_cbep(base_size = 12)
-```
-
-<img src="DO_Analysis_Summary_files/figure-gfm/plot_emms_site_second_gamm-1.png" style="display: block; margin: auto;" />
-
-#### By Year
-
-``` r
-my_ref_grid <- ref_grid(do_gamm_2, cov.reduce = median) 
-(by_year_2 <- summary(emmeans(my_ref_grid, 'Year_f')))
-#>  Year_f emmean    SE   df lower.CL upper.CL
-#>  2010     8.58 0.288 8247     8.01     9.14
-#>  2011     8.44 0.263 8247     7.92     8.95
-#>  2012     7.98 0.280 8247     7.43     8.53
-#>  2013     8.08 0.221 8247     7.65     8.52
-#>  2014     7.51 0.224 8247     7.07     7.94
-#>  2015     7.92 0.230 8247     7.47     8.37
-#>  2016     6.70 0.224 8247     6.26     7.14
-#>  2017     7.82 0.211 8247     7.41     8.24
-#>  2018     7.35 0.226 8247     6.91     7.80
-#> 
-#> Results are averaged over the levels of: Site 
-#> Confidence level used: 0.95
-```
-
-``` r
-plot(by_year_2) + 
-  annotate('text', 11, 6, label = labl, size = 3) +
-  xlim(0,12) +
-  xlab('DO (mg/l)\n(Flow and Temperature Adjusted)') +
-  ylab('') +
-  geom_vline(xintercept =  7, color = 'orange') +
-  geom_vline(xintercept =  5, color = 'red') +
-  coord_flip() +
-  theme_cbep(base_size = 12)
-```
-
-<img src="DO_Analysis_Summary_files/figure-gfm/plot_emms_year_second_gamm-1.png" style="display: block; margin: auto;" />
-
-# Compare Marginal Means From Two Models
-
-## Calculate Observed Averages
-
-``` r
-avg_by_site <- full_data %>%
-  select(Site, DO_Median) %>%
-  group_by(Site) %>%
-  summarize(observed = mean(DO_Median, na.rm = TRUE),
-            .groups = 'drop')  %>%
-  pull(observed)
-
-avg_by_year <- full_data %>%
-  select(Year_f, DO_Median) %>%
-  group_by(Year_f) %>%
-  summarize(observed = mean(DO_Median, na.rm = TRUE),
-            .groups = 'drop')  %>%
-  pull(observed)
-```
-
-## By Site
-
-``` r
-tibble(Site = by_site$Site,
-       observed = avg_by_site,
-       large = by_site$emmean,
-       small = by_site_2$emmean ) %>%
-
-ggplot(aes(x = observed)) +
-  geom_point(aes(y = small), color = 'red') +
-  geom_point(aes(y = large), color = 'blue') +
-  geom_text(aes(y = small, label = Site),
-            hjust = 0, nudge_x = 0.05, nudge_y = -0.05) +
-  geom_abline(slope = 1, intercept = 0) +
-  xlab('Observed') +
-  ylab('Marginal Means')  +
-  xlim(6.5, 9.5) +
-  ylim(6.5,9.5)
-```
-
-<img src="DO_Analysis_Summary_files/figure-gfm/plot_compare_mods_to_obs_site-1.png" style="display: block; margin: auto;" />
-
-Correspondence with observed means is only so-so, as is expected with
-uneven sampling histories. The main difference is in the positions of
-S05 and S17. These sites have inconsistent sampling histories, so
-marginal means are adjusted by year. S17 was observed principally during
-“bad” years, so the marginal mean (which is averaged across for ALL
-years) as adjusted upwards, since the model concludes the observed
-values would probably have been better. Meanwhile, site S05 is shifted
-down, for similar reasons.
-
-The smaller model consistently predicts a smaller marginal mean. The
-relationship appears to be nearly perfectly linear, which is not too
-surprising, since the smaller model differs by dropping two linear model
-terms that were averaged across by `emmeans()`.
-
-## By Year
-
-``` r
-tibble(Year = by_year$Year,
-       observed = avg_by_year,
-       large = by_year$emmean,
-       small = by_year_2$emmean ) %>%
-
-ggplot(aes(x = observed)) +
-  geom_point(aes(y = small), color = 'red') +
-  geom_point(aes(y = large), color = 'blue') +
-  geom_text(aes(y = small, label = Year),
-            hjust = 0, nudge_x = 0.05, nudge_y = -0.05) +
-  geom_abline(slope = 1, intercept = 0) +
-  xlab('Observed') +
-  ylab('Marginal Means') # +
-```
-
-<img src="DO_Analysis_Summary_files/figure-gfm/plot_compare_mods_to_obs_year-1.png" style="display: block; margin: auto;" />
-
-``` r
- # xlim(6.5, 9.5) +
- # ylim(6.5,9.5)
-```
-
-Here, correlations between observed averages and estimated marginal
-means are a bit more consistent, with the exception of the truly wild
-value forecast for Year 2010 from the “full” model.
-
-Year 2010 is an outlier regarding seasonal availability of data. Data
-collection began in June, so there is no data from the cooler months of
-March, April, and May. Apparently, the larger model makes a very large
-correction for the lack of data from those cool months.
-
-Again, the smaller model consistently predicts the smaller marginal
-means. This probably reflects the impact of estimating marginal means by
-month, which is not a term in the smaller model.
-
 # Hierarchical Analysis of Trends
 
 We develop hierarchical GAMs that includes both autocorrelated errors
 and a random term by year. The concept is that year to year variation
 can be thought of as random based on annual weather, or perhaps
-watershed flow conditions. We test for a long term trend against that
-random term, to minimize the risk that we overinterpret year to year
-variability as a trend. But note that this model also includes terms for
-stream water temperature and flow.
+watershed flow conditions. An alternative way of describing the same
+idea is that observations made during the same year tend to be more
+highly correlated than observations from separate years.
+
+We test for a long term trend against that random term, to minimize the
+risk that we overinterpret year to year variability as a trend. But note
+that this model also includes terms for stream water temperature and
+flow.
 
 ## Model 1 : Site by Year interaction
 
@@ -1088,8 +823,6 @@ if (! file.exists("models/do_gamm_trend_1.rds")) {
 } else {
   do_gamm_trend_1 <- readRDS("models/do_gamm_trend_1.rds")
 }
-#>    user  system elapsed 
-#>   26.85    0.55   27.35
 ```
 
 ### ANOVA
@@ -1236,16 +969,20 @@ full_data %>%
 #> 4  2014   214    6.16      6.95
 ```
 
-So we fit a slope to a four year record, where a linear model makes
-effectively no sense.
+So we basically just fit a slope to a four year record, where a linear
+model effectively no sense.
 
-We conclude that the full interaction model is problematic.
+We conclude that the full interaction model is problematic, and go on to
+a reduced model that omits the interaction terms.
 
 ## Model 2: No Interaction
 
-This model does slight violence to the prior analysis, but is arguably a
-better description of what we know from the available data. It avoids
-overfitting the short records at two sites.
+This model is *also* problematic as there are likely to be differences
+between sites. The prior analysis suggests site by year interactions,
+but they can not be interpreted because of the different sampling
+histories at each site. This model avoids overfitting the short records
+at some sites. Our goal is to look for long-terms trends in DO, and that
+question can be examined across all sites.
 
 ``` r
 if (! file.exists("models/do_gamm_trend_2.rds")) {
@@ -1266,8 +1003,6 @@ if (! file.exists("models/do_gamm_trend_2.rds")) {
 } else {
   do_gamm_trend_2 <- readRDS("models/do_gamm_trend_2.rds")
 }
-#>    user  system elapsed 
-#>   26.06    0.51   26.38
 ```
 
 ### ANOVA
@@ -1293,7 +1028,9 @@ anova(do_gamm_trend_2$gam)
 #> s(FlowIndex) 3.943  3.943 58.84  <2e-16
 ```
 
-Here the Year term AND the Site terms are statistically significant.
+Here the Year term is statistically significant, suggesting a long term
+decline in dissolved oxygen, even after accounting for changes in stream
+temperature and the stream-wide flow index.
 
 ### Summary
 
@@ -1354,11 +1091,9 @@ plot(do_gamm_trend_2$gam)
 
 <img src="DO_Analysis_Summary_files/figure-gfm/smoother_trend_gamm_2-1.png" style="display: block; margin: auto;" />
 
-### Examine Marginal Means
+The smoother looks nearly identical to the one fit in the full model.
 
-We need to look at the marginally significant interaction, but we should
-be careful here, as data is only available for selected years for three
-of our sites, including SO5, S06B and S17.
+### Examine Marginal Means
 
 ``` r
 the_call <-  quote(gamm(DO_Median ~ Site + Year +
@@ -1395,5 +1130,5 @@ plot(by_site) +
 
 <img src="DO_Analysis_Summary_files/figure-gfm/plot_trend_gamm_2_quick-1.png" style="display: block; margin: auto;" />
 
-Note that we STILL predict low DO for S05 in 2014, but the prediction is
-actually not far of the observed averages.
+Note that we STILL predict low DO for S05, but the prediction is not as
+far off the observed averages.

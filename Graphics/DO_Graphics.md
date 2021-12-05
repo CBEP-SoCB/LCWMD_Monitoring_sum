@@ -9,14 +9,13 @@ Curtis C. Bohlen, Casco Bay Estuary Partnership.
 -   [Import Libraries](#import-libraries)
 -   [Data Preparation](#data-preparation)
     -   [Initial Folder References](#initial-folder-references)
-    -   [Load Weather Data](#load-weather-data)
     -   [Update Folder References](#update-folder-references)
     -   [Load Data on Sites and Impervious
         Cover](#load-data-on-sites-and-impervious-cover)
     -   [Load Main Data](#load-main-data)
         -   [Cleanup](#cleanup)
     -   [Data Correction](#data-correction)
-        -   [Anomolous Depth Values](#anomolous-depth-values)
+        -   [Anomalous Depth Values](#anomalous-depth-values)
         -   [Single S06B Chloride Observation from
             2017](#single-s06b-chloride-observation-from-2017)
         -   [Site S03, end of 2016](#site-s03-end-of-2016)
@@ -24,21 +23,15 @@ Curtis C. Bohlen, Casco Bay Estuary Partnership.
         Months](#remove-partial-data-from-winter-months)
     -   [Add Stream Flow Index](#add-stream-flow-index)
 -   [Initial GAMM Model](#initial-gamm-model)
--   [Simplified GAMM Model](#simplified-gamm-model)
     -   [Visualizing Estimated Marginal
         Means](#visualizing-estimated-marginal-means)
-        -   [By Month](#by-month)
-        -   [By Site](#by-site)
-        -   [By Year](#by-year)
 -   [Graphic Alternatives](#graphic-alternatives)
     -   [Calculate Observed
         Frequencies](#calculate-observed-frequencies)
-    -   [By Site](#by-site-1)
+    -   [By Site](#by-site)
         -   [Added Boxplots – Observed
-            Medians](#added-boxplots-observed-medians)
-        -   [By Imperviousness](#by-imperviousness)
-    -   [By Month](#by-month-1)
-        -   [Added Boxplots](#added-boxplots)
+            Medians](#added-boxplots--observed-medians)
+    -   [By Month](#by-month)
     -   [Trends](#trends)
         -   [Violin Plot](#violin-plot)
 
@@ -85,27 +78,34 @@ median water temperature at each monitoring Site.
 
 ``` r
 library(tidyverse)
-#> -- Attaching packages --------------------------------------- tidyverse 1.3.0 --
-#> v ggplot2 3.3.3     v purrr   0.3.4
-#> v tibble  3.0.5     v dplyr   1.0.3
-#> v tidyr   1.1.2     v stringr 1.4.0
-#> v readr   1.4.0     v forcats 0.5.0
+#> Warning: package 'tidyverse' was built under R version 4.0.5
+#> -- Attaching packages --------------------------------------- tidyverse 1.3.1 --
+#> v ggplot2 3.3.5     v purrr   0.3.4
+#> v tibble  3.1.6     v dplyr   1.0.7
+#> v tidyr   1.1.4     v stringr 1.4.0
+#> v readr   2.1.0     v forcats 0.5.1
+#> Warning: package 'ggplot2' was built under R version 4.0.5
+#> Warning: package 'tidyr' was built under R version 4.0.5
+#> Warning: package 'dplyr' was built under R version 4.0.5
+#> Warning: package 'forcats' was built under R version 4.0.5
 #> -- Conflicts ------------------------------------------ tidyverse_conflicts() --
 #> x dplyr::filter() masks stats::filter()
 #> x dplyr::lag()    masks stats::lag()
 library(readr)
 library(emmeans) # Provides tools for calculating marginal means
+#> Warning: package 'emmeans' was built under R version 4.0.5
 
 #library(nlme)    # Provides GLS model functions -- not used here
 
 library(mgcv)    # generalized additive models. Function gamm() allows
+#> Warning: package 'mgcv' was built under R version 4.0.5
 #> Loading required package: nlme
 #> 
 #> Attaching package: 'nlme'
 #> The following object is masked from 'package:dplyr':
 #> 
 #>     collapse
-#> This is mgcv 1.8-33. For overview type 'help("mgcv-package")'.
+#> This is mgcv 1.8-38. For overview type 'help("mgcv-package")'.
                  # autocorrelated errors.
 
 library(CBEPgraphics)
@@ -118,7 +118,7 @@ theme_set(theme_cbep())
 ## Initial Folder References
 
 ``` r
-sibfldnm    <- 'Original_Data'
+sibfldnm    <- 'Data'
 parent      <- dirname(getwd())
 sibling     <- file.path(parent,sibfldnm)
 
@@ -126,29 +126,10 @@ dir.create(file.path(getwd(), 'figures'), showWarnings = FALSE)
 dir.create(file.path(getwd(), 'models'), showWarnings = FALSE)
 ```
 
-## Load Weather Data
-
-``` r
-fn <- "Portland_Jetport_2009-2019.csv"
-fpath <- file.path(sibling, fn)
-
-weather_data <- read_csv(fpath, 
- col_types = cols(.default = col_skip(),
-        date = col_date(),
-        PRCP = col_number(), PRCPattr = col_character() #,
-        #SNOW = col_number(), SNOWattr = col_character(), 
-        #TMIN = col_number(), TMINattr = col_character(), 
-        #TAVG = col_number(), TAVGattr = col_character(), 
-        #TMAX = col_number(), TMAXattr = col_character(), 
-        )) %>%
-  rename(sdate = date) %>%
-  mutate(pPRCP = dplyr::lag(PRCP))
-```
-
 ## Update Folder References
 
 ``` r
-sibfldnm    <- 'Derived_Data'
+sibfldnm    <- 'Data'
 parent      <- dirname(getwd())
 sibling     <- file.path(parent,sibfldnm)
 ```
@@ -170,18 +151,14 @@ fpath <- file.path(sibling, fn)
 
 Site_IC_Data <- read_csv(fpath) %>%
   filter(Site != "--") 
-#> 
+#> Rows: 7 Columns: 8
 #> -- Column specification --------------------------------------------------------
-#> cols(
-#>   Site = col_character(),
-#>   Subwatershed = col_character(),
-#>   Area_ac = col_double(),
-#>   IC_ac = col_double(),
-#>   CumArea_ac = col_double(),
-#>   CumIC_ac = col_double(),
-#>   PctIC = col_character(),
-#>   CumPctIC = col_character()
-#> )
+#> Delimiter: ","
+#> chr (4): Site, Subwatershed, PctIC, CumPctIC
+#> dbl (4): Area_ac, IC_ac, CumArea_ac, CumIC_ac
+#> 
+#> i Use `spec()` to retrieve the full column specification for this data.
+#> i Specify the column types or set `show_col_types = FALSE` to quiet this message.
 
 # Now, create a factor that preserves the order of rows (roughly upstream to downstream). 
 Site_IC_Data <- Site_IC_Data %>%
@@ -211,13 +188,6 @@ Note that I filter out data from 2019 because that is only a partial
 year, which might affect estimation of things like seasonal trends. We
 could add it back in, but with care….
 
-*Full\_Data.csv* does not include a field for precipitation from the
-previous day. In earlier work, we learned that a weighted sum of recent
-precipitation provided better explanatory power. But we also want to
-check a simpler model, so we construct a “PPrecip” data field. This is
-based on a modification of code in the “Make\_Daily\_Summaries.Rmd”
-notebook.
-
 ``` r
 fn <- "Full_Data.csv"
 fpath <- file.path(sibling, fn)
@@ -231,26 +201,22 @@ full_data <- read_csv(fpath,
   mutate(Site = factor(Site, levels=levels(Site_IC_Data$Site))) %>%
   mutate(Month = factor(Month, levels = month.abb)) %>%
   mutate(IC=as.numeric(Site_IC_Data$CumPctIC[match(Site, Site_IC_Data$Site)])) %>%
-  mutate(Year_f = factor(Year)) %>%
-
-# We combine data using "match" because we have data for multiple sites and 
-# therefore dates are not unique.  `match()` correctly assigns weather
-# data by date.
-mutate(PPrecip = weather_data$pPRCP[match(sdate, weather_data$sdate)])
-#> Warning: Missing column names filled in: 'X1' [1]
-#> Warning: The following named parsers don't match the column names: FlowIndex
+  mutate(Year_f = factor(Year))
+#> New names:
+#> * `` -> ...1
+#> Warning: The following named parsers don't match the column names: X1, FlowIndex
 ```
 
 ### Cleanup
 
 ``` r
-rm(Site_IC_Data, weather_data)
+rm(Site_IC_Data)
 rm(fn, fpath, parent, sibling, sibfldnm)
 ```
 
 ## Data Correction
 
-### Anomolous Depth Values
+### Anomalous Depth Values
 
 Several depth observations in the record appear highly unlikely. In
 particular, several observations show daily median water depths over 15
@@ -434,50 +400,12 @@ if (! file.exists("models/do_gamm.rds")) {
 } else {
   do_gamm <- readRDS("models/do_gamm.rds")
 }
-#>    user  system elapsed 
-#>  776.33    3.30  780.56
-```
-
-# Simplified GAMM Model
-
-Our simplified GAMM only fits a soothing term for water temperature.
-This is a simplification, as other models demonstrate that more complex
-models perform better by several standard model metrics. However, this
-one is simple to explain. And (with one exception) choice of model has
-little effect on our qualitative conclusions. See the
-“DO\_Analysis\_Summary.Rmd” file for details.
-
-This model takes several minutes to run (more than 5, less than 15) We
-check for a saved version before recalculating. If you alter underlying
-data or model, you need to delete the saved version of the model to
-trigger recalculation.
-
-``` r
-if (! file.exists("models/do_gamm_2.rds")) {
-  print(
-    system.time(
-      do_gamm_2<- gamm(DO_Median ~ Site + 
-                        s(T_Median, k = 1) +
-                        Year_f,
-                       correlation = corAR1(form = ~ as.numeric(sdate) | Site),
-                       na.action = na.omit, 
-                       method = 'REML',
-                       data = full_data)
-    )
-  )
-  saveRDS(do_gamm_2, file="models/do_gamm_2.rds")
-} else {
-  do_gamm_2 <- readRDS("models/do_gamm_2.rds")
-}
-#> Warning in smooth.construct.tp.smooth.spec(object, dk$data, dk$knots): basis dimension, k, increased to minimum possible
-#>    user  system elapsed 
-#> 2224.71    6.88 2233.38
 ```
 
 ## Visualizing Estimated Marginal Means
 
 Reliably calling `emmeans()` for `gamm()` models requires creating a
-call object and associating it with the model as `do_gamm_2$gam$call`.
+call object and associating it with the model as `do_gamm$gam$call`.
 (See the `emmeans` “models” vignette for more info. We (re)create the
 call object, associate it with the model, manually construct a reference
 grid before finally calling `emmeans()` to extract marginal means.
@@ -505,90 +433,8 @@ the_call <-  quote(gamm(DO_Median ~ Site +
                        method = 'REML',
                        data = full_data))
 do_gamm$gam$call <- the_call
-
-
-
-
-the_call <-  quote(gamm(DO_Median ~ Site + 
-                        s(T_Median, k = 1) +
-                        Year_f,
-                       correlation = corAR1(form = ~ as.numeric(sdate) | Site),
-                       na.action = na.omit, 
-                       method = 'REML',
-                       data = full_data))
-do_gamm_2$gam$call <- the_call
-```
-
-### By Month
-
-This is only estimable via our larger GAMM model.
-
-``` r
 my_ref_grid <- ref_grid(do_gamm, cov.reduce = median, cov.keep = 'Month')
-by_month <- summary(emmeans(my_ref_grid, ~ Month, 
-             type = 'response'))
-
-labl <- 'Values Adjusted to Median Flow and\nMedian 10 Day Precipitation\nAll Sites Combined'
-
-# `plot.emmGrid()` defaults to using ggplot, so we can use ggplot
-# skills to alter the look and feel of these plots.
-plot(by_month) + 
-  xlab('Dissolved Oxygen (mg/l)\n(Flow and Precipitation Adjusted)') +
-  ylab ('') +
-  annotate('text', 10, 6, label = labl, size = 3.5) +
-  annotate('text', 5.25, 10.25, label = 'Class C' , size = 3, hjust = 1) + 
-  annotate('text', 7.25, 10.25, label = 'Class B' , size = 3, hjust = 1) + 
-  xlim(0,11) +
-  geom_vline(xintercept =  7, lty = 2) +
-  geom_vline(xintercept =  5, lty = 2) +
-  coord_flip() +
-  theme_cbep(base_size = 12)
 ```
-
-<img src="DO_Graphics_files/figure-gfm/plot_monthly_gamm-1.png" style="display: block; margin: auto;" />
-
-### By Site
-
-``` r
-by_site <- summary(emmeans(my_ref_grid, ~ Site, type = 'response'))
-
-labl <- 'Values Adjusted to Median Flow and\nMedian Water Temperature\nAll Dates Combined'
-
-plot(by_site) + 
-  xlab('Dissolved Oxygen (mg/l)\n(Flow and Temperature Adjusted)') +
-  ylab("Upstream            Main Stem             Lower Tribs") +
-  annotate('text', 10, 4, label = labl, size = 3.5) +
-  annotate('text', 5.25, 6.25, label = 'Class C' , size = 3, hjust = 1) + 
-  annotate('text', 7.25, 6.25, label = 'Class B' , size = 3, hjust = 1) + 
-  xlim(0,11) +
-  geom_vline(xintercept =  7, lty = 2) +
-  geom_vline(xintercept =  5, lty = 2) +
-  coord_flip() +
-  theme_cbep(base_size = 12)
-```
-
-<img src="DO_Graphics_files/figure-gfm/plot_site_gamm-1.png" style="display: block; margin: auto;" />
-
-### By Year
-
-``` r
-by_year <- summary(emmeans(my_ref_grid, ~ Year_f, type = 'response'))
-
-labl <- 'Values Adjusted to Median Flow and\nMedian Water Temperature\nAll Dates Combined'
-
-plot(by_year) + 
-  xlab('Dissolved Oxygen (mg/l)\n(Flow and Temperature Adjusted)') +
-  annotate('text', 10, 6, label = labl, size = 3.5) +
-  annotate('text', 5.25, 9.25, label = 'Class C' , size = 3, hjust = 1) + 
-  annotate('text', 7.25, 9.25, label = 'Class B' , size = 3, hjust = 1) + 
-  xlim(0,11) +
-  geom_vline(xintercept =  7, lty = 2) +
-  geom_vline(xintercept =  5, lty = 2) +
-  coord_flip() +
-  theme_cbep(base_size = 12)
-```
-
-<img src="DO_Graphics_files/figure-gfm/unnamed-chunk-8-1.png" style="display: block; margin: auto;" />
 
 # Graphic Alternatives
 
@@ -625,28 +471,9 @@ plt1 <- full_data %>%
   annotate('text', 0, 5.5, label = 'Class C', size = 3, hjust = 0) + 
   
   theme_cbep(base_size = 12)
-plt1
-#> Warning: Removed 3293 rows containing non-finite values (stat_ydensity).
 ```
-
-<img src="DO_Graphics_files/figure-gfm/unnamed-chunk-10-1.png" style="display: block; margin: auto;" />
 
 ### Added Boxplots – Observed Medians
-
-``` r
-plt1 +
-  geom_boxplot(width=0.1, coef = 0, outlier.shape = NA,
-               color= 'gray30', fill = 'white') +
-  #stat_summary(fun = "median",
-  #            geom ='point', shape = 18, size = 2)
-ggsave('figures/do_Site_violin_w_box.pdf', device = cairo_pdf, width = 5, height = 4)
-#> Warning: Removed 3293 rows containing non-finite values (stat_ydensity).
-#> Warning: Removed 3293 rows containing non-finite values (stat_boxplot).
-#> Warning: Removed 3293 rows containing non-finite values (stat_ydensity).
-#> Warning: Removed 3293 rows containing non-finite values (stat_boxplot).
-```
-
-<img src="DO_Graphics_files/figure-gfm/site_violins_boxes-1.png" style="display: block; margin: auto;" />
 
 ``` r
 xanchor = 1.25
@@ -683,32 +510,6 @@ ggsave('figures/do_Site_violin_w_bo_annot.pdf', device = cairo_pdf, width = 5, h
 #> Warning: Removed 3293 rows containing non-finite values (stat_boxplot).
 ```
 
-### By Imperviousness
-
-#### A Table
-
-We make a table, but there is no strong relationship with IC.
-
-``` r
-full_data %>%
-  select(Site, DO_Median, IC) %>%
-  group_by(Site) %>%
-  summarize(`Watershed Imperviousness (%)` = round(median(IC),1),
-            `Median Dissolved Oxygen (mg/l)` = round(median(DO_Median, na.rm = TRUE),1),
-            .groups = 'drop') %>%
-  #arrange(`Watershed Imperviousness (%)`) %>%
-knitr::kable(align = "lcc")
-```
-
-| Site | Watershed Imperviousness (%) | Median Dissolved Oxygen (mg/l) |
-|:-----|:----------------------------:|:------------------------------:|
-| S07  |             20.2             |              7.6               |
-| S06B |             12.9             |              7.9               |
-| S05  |             16.6             |              7.8               |
-| S17  |             19.9             |              7.2               |
-| S03  |             41.2             |              8.6               |
-| S01  |             56.1             |              8.2               |
-
 ## By Month
 
 We pull out the winter months with limited real data.
@@ -730,24 +531,6 @@ plt2 <- full_data %>%
   
   theme_cbep(base_size = 12)
 ```
-
-### Added Boxplots
-
-``` r
-plt2 +
-  geom_boxplot(width=0.15, coef = 0, outlier.shape = NA,
-               color= 'gray30', fill = 'white') +
-  #stat_summary(fun = "median",
-  #             geom ='point', shape = 18, size = 2.5)
-ggsave('figures/do_month_violin_w_box.pdf', device = cairo_pdf,
-       width = 5, height = 4)
-#> Warning: Removed 3293 rows containing non-finite values (stat_ydensity).
-#> Warning: Removed 3293 rows containing non-finite values (stat_boxplot).
-#> Warning: Removed 3293 rows containing non-finite values (stat_ydensity).
-#> Warning: Removed 3293 rows containing non-finite values (stat_boxplot).
-```
-
-<img src="DO_Graphics_files/figure-gfm/do_months_box-1.png" style="display: block; margin: auto;" />
 
 ``` r
 xanchor = 5
@@ -809,28 +592,7 @@ plt3 <- full_data %>%
   annotate('text', 2008.5, 5.5, label = 'Class C', size = 3, hjust = 0) + 
   
   theme_cbep(base_size = 12)
-plt3
-#> Warning: Removed 3293 rows containing non-finite values (stat_ydensity).
 ```
-
-<img src="DO_Graphics_files/figure-gfm/unnamed-chunk-12-1.png" style="display: block; margin: auto;" />
-\#\#\#\# Added Boxplots
-
-``` r
-plt3 +
-  geom_boxplot(aes(group = Year), width=0.15, coef = 0, outlier.shape = NA,
-               color= 'gray30', fill = 'white')  +
-  # stat_summary(fun = "median",
-  #            geom ='point', shape = 18, size = 2.5)
-
-ggsave('figures/do_year_violin_w_box.pdf', device = cairo_pdf, width = 5, height = 4)
-#> Warning: Removed 3293 rows containing non-finite values (stat_ydensity).
-#> Warning: Removed 3293 rows containing non-finite values (stat_boxplot).
-#> Warning: Removed 3293 rows containing non-finite values (stat_ydensity).
-#> Warning: Removed 3293 rows containing non-finite values (stat_boxplot).
-```
-
-<img src="DO_Graphics_files/figure-gfm/do_year_box-1.png" style="display: block; margin: auto;" />
 
 ``` r
 xanchor = 2008.5

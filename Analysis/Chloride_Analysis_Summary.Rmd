@@ -52,7 +52,6 @@ log(\text{Chlorides}) = f(\text{Covariates}) +
 \beta_{2,j} \text{Month}_j + \beta_3 \text{Year} + \beta_{4,i} \text{Site}_i * \text{Year} + u_{t}
 $$
 
-
 $$
 u_{t} = a_{1} u_{t−1} + \epsilon_{t} \text{ is the autocorrelated error}
 $$
@@ -166,7 +165,6 @@ rm(fn, fpath, parent, sibling, sibfldnm)
 ```
 
 ## Data Correction
-
 ### Anomalous Depth Values
 Several depth observations in the record appear highly unlikely. In particular,
 several observations show daily median water depths over 15 meters. And
