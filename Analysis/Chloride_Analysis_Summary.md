@@ -7,14 +7,12 @@ Curtis C. Bohlen, Casco Bay Estuary Partnership.
 -   [Import Libraries](#import-libraries)
 -   [Data Preparation](#data-preparation)
     -   [Initial Folder References](#initial-folder-references)
-    -   [Load Weather Data](#load-weather-data)
-    -   [Update Folder References](#update-folder-references)
     -   [Load Data on Sites and Impervious
         Cover](#load-data-on-sites-and-impervious-cover)
     -   [Load Main Data](#load-main-data)
         -   [Cleanup](#cleanup)
     -   [Data Correction](#data-correction)
-        -   [Anomolous Depth Values](#anomolous-depth-values)
+        -   [Anomalous Depth Values](#anomalous-depth-values)
         -   [Single S06B Chloride Observation from
             2017](#single-s06b-chloride-observation-from-2017)
         -   [Site S03, end of 2016](#site-s03-end-of-2016)
@@ -32,7 +30,7 @@ Curtis C. Bohlen, Casco Bay Estuary Partnership.
     -   [Checking Estimated Marginal
         Means](#checking-estimated-marginal-means)
     -   [Visualizing Trends](#visualizing-trends)
--   [Model without the interactions.](#model-without-the-interactions.)
+-   [Model without the interactions.](#model-without-the-interactions)
     -   [ANOVA](#anova-1)
     -   [Summary](#summary-1)
     -   [Structure of the GAM](#structure-of-the-gam-1)
@@ -50,7 +48,7 @@ Curtis C. Bohlen, Casco Bay Estuary Partnership.
 Chlorides are frequently elevated in Maine urban streams because of use
 of salt for deicing of roads, parking areas, sidewalks, and paths in
 winter. While water quality standards are often written in terms of
-chlorides, it may be better to think about chlorides as a measure of the
+chlorides, it may be better to think about chlorides as a measure of
 salinity. Physiologically, it is probably salinity or osmolarity that
 principally affects organisms in the stream, not chlorides *per se*. The
 data we examine here is based on measurement of conductivity, which is
@@ -59,12 +57,14 @@ regression relationship developed over several years.
 
 This R Notebook reviews the model we end up using to analyze chloride
 levels in Long Creek. We examined numerous models before settling on
-this one. Details of some of those models is available in the
-“Chloride\_Analysis.Rmd” notebook.
+this one. Details of some of those models are available in the more
+complete SoCB GitHub
+[archive](https://github.com/CBEP-SoCB-Details/LCWMD_Monitoring).
 
 Several more complex models are “better” using conventional measures of
 statistical significance or information criteria. We selected a slightly
-simpler model, largely as it makes explaining the model more direct.
+simpler model, principally bvecause it makes explaining the model more
+direct.
 
 Our interest focuses on answering three questions:  
 1. What is the effect of time of year (Month, or Day of Year) on
@@ -76,22 +76,19 @@ the magnitude of the trend from site to site?
 We use a Generalized Additive Model, with autocorrelated errors to
 explore these questions. The model has the following form:
 
-$$ 
-\\begin{align}
-log(Chlorides) &= f(Covariates) + \\\\
-&\\qquad \\beta\_{1,i} Site\_i + 
-\\beta\_{2,j} Month\_j + \\beta\_3 Year + \\beta\_{4,i} Site\_i \* Year + \\epsilon
-\\end{align}
-$$
+*l**o**g*(Chlorides) = *f*(Covariates) + *β*<sub>1, *i*</sub>Site<sub>*i*</sub> + *β*<sub>2, *j*</sub>Month<sub>*j*</sub> + *β*<sub>3</sub>Year + *β*<sub>4, *i*</sub>Site<sub>*i*</sub> \* Year + *u*<sub>*t*</sub>
 
-Where: \* covariates include three terms:  
+*u*<sub>*t*</sub> = *a*<sub>1</sub>*u*<sub>*t* − 1</sub> + *ϵ*<sub>*t*</sub> is the autocorrelated error
+
+Where:  
+\* covariates include three terms:  
 – Daily precipitation  
 – Weighted precipitation from the prior nine days  
 – Stream flow in the middle of the watershed  
 \* The core predictors enter the model as standard linear terms  
 \* The error i an AR(1) correlated error.
 
-We abuse the autocorrelation models slightly, since we use sequential
+We abuse the autocorrelation model slightly, since we use sequential
 autocorrelations (not time-based) and we don’t fit separate
 autocorrelations for each site and season. That should have little
 impact on results, as transitions are relatively rare in a dense data
@@ -99,37 +96,43 @@ set, and missing values at the beginning of each season at each site
 prevent estimation near season and site transitions in the sequential
 data anyway.
 
-On the whole, this models is OK, but not great. It has heavy tailed,
-skewed residuals. We should not trust the asymptotic p values. But since
-sample sizes are large and results tend to have high statistical
-significance, p values are not much use anyway.
+On the whole, these models are OK, but not great. They have heavy
+tailed, skewed residuals. We should not trust the asymptotic p values.
+But since sample sizes are large and results tend to have high
+statistical significance, p values are not much use anyway.
 
 # Import Libraries
 
 ``` r
 library(tidyverse)
-#> -- Attaching packages --------------------------------------- tidyverse 1.3.0 --
-#> v ggplot2 3.3.3     v purrr   0.3.4
-#> v tibble  3.0.5     v dplyr   1.0.3
-#> v tidyr   1.1.2     v stringr 1.4.0
-#> v readr   1.4.0     v forcats 0.5.0
+#> Warning: package 'tidyverse' was built under R version 4.0.5
+#> -- Attaching packages --------------------------------------- tidyverse 1.3.1 --
+#> v ggplot2 3.3.5     v purrr   0.3.4
+#> v tibble  3.1.6     v dplyr   1.0.7
+#> v tidyr   1.1.4     v stringr 1.4.0
+#> v readr   2.1.0     v forcats 0.5.1
+#> Warning: package 'ggplot2' was built under R version 4.0.5
+#> Warning: package 'tidyr' was built under R version 4.0.5
+#> Warning: package 'dplyr' was built under R version 4.0.5
+#> Warning: package 'forcats' was built under R version 4.0.5
 #> -- Conflicts ------------------------------------------ tidyverse_conflicts() --
 #> x dplyr::filter() masks stats::filter()
 #> x dplyr::lag()    masks stats::lag()
 library(readr)
 
 library(emmeans) # Provides tools for calculating marginal means
-library(nlme)
+#> Warning: package 'emmeans' was built under R version 4.0.5
+#library(nlme)
+
+library(mgcv)    # generalized additive models. Function gamm() allows
+#> Warning: package 'mgcv' was built under R version 4.0.5
+#> Loading required package: nlme
 #> 
 #> Attaching package: 'nlme'
 #> The following object is masked from 'package:dplyr':
 #> 
 #>     collapse
-
-#library(zoo)     # here, for the `rollapply()` function
-
-library(mgcv)    # generalized additive models. Function gamm() allows
-#> This is mgcv 1.8-33. For overview type 'help("mgcv-package")'.
+#> This is mgcv 1.8-38. For overview type 'help("mgcv-package")'.
                  # autocorrelation.
 
 library(CBEPgraphics)
@@ -142,39 +145,12 @@ theme_set(theme_cbep())
 ## Initial Folder References
 
 ``` r
-sibfldnm    <- 'Original_Data'
+sibfldnm    <- 'Data'
 parent      <- dirname(getwd())
 sibling     <- file.path(parent,sibfldnm)
 
 dir.create(file.path(getwd(), 'figures'), showWarnings = FALSE)
 dir.create(file.path(getwd(), 'models'), showWarnings = FALSE)
-```
-
-## Load Weather Data
-
-``` r
-fn <- "Portland_Jetport_2009-2019.csv"
-fpath <- file.path(sibling, fn)
-
-weather_data <- read_csv(fpath, 
- col_types = cols(.default = col_skip(),
-        date = col_date(),
-        PRCP = col_number(), PRCPattr = col_character() #,
-        #SNOW = col_number(), SNOWattr = col_character(), 
-        #TMIN = col_number(), TMINattr = col_character(), 
-        #TAVG = col_number(), TAVGattr = col_character(), 
-        #TMAX = col_number(), TMAXattr = col_character(), 
-        )) %>%
-  rename(sdate = date) %>%
-  mutate(pPRCP = dplyr::lag(PRCP))
-```
-
-## Update Folder References
-
-``` r
-sibfldnm    <- 'Derived_Data'
-parent      <- dirname(getwd())
-sibling     <- file.path(parent,sibfldnm)
 ```
 
 ## Load Data on Sites and Impervious Cover
@@ -194,18 +170,14 @@ fpath <- file.path(sibling, fn)
 
 Site_IC_Data <- read_csv(fpath) %>%
   filter(Site != "--") 
-#> 
+#> Rows: 7 Columns: 8
 #> -- Column specification --------------------------------------------------------
-#> cols(
-#>   Site = col_character(),
-#>   Subwatershed = col_character(),
-#>   Area_ac = col_double(),
-#>   IC_ac = col_double(),
-#>   CumArea_ac = col_double(),
-#>   CumIC_ac = col_double(),
-#>   PctIC = col_character(),
-#>   CumPctIC = col_character()
-#> )
+#> Delimiter: ","
+#> chr (4): Site, Subwatershed, PctIC, CumPctIC
+#> dbl (4): Area_ac, IC_ac, CumArea_ac, CumIC_ac
+#> 
+#> i Use `spec()` to retrieve the full column specification for this data.
+#> i Specify the column types or set `show_col_types = FALSE` to quiet this message.
 
 # Now, create a factor that preserves the order of rows (roughly upstream to downstream). 
 Site_IC_Data <- Site_IC_Data %>%
@@ -251,30 +223,27 @@ full_data <- read_csv(fpath,
         D_Median = col_double(), Precip = col_number(), 
         X1 = col_skip(), Year = col_integer(), 
         FlowIndex = col_double())) %>%
-
   mutate(Site = factor(Site, levels=levels(Site_IC_Data$Site))) %>%
   mutate(Month = factor(Month, levels = month.abb)) %>%
-  mutate(IC=as.numeric(Site_IC_Data$CumPctIC[match(Site, Site_IC_Data$Site)])) %>%
-  mutate(Yearf = factor(Year)) %>%
-
-# We combine data using "match" because we have data for multiple sites and 
-# therefore dates are not unique.  `match()` correctly assigns weather
-# data by date.
-mutate(PPrecip = weather_data$pPRCP[match(sdate, weather_data$sdate)])
-#> Warning: Missing column names filled in: 'X1' [1]
-#> Warning: The following named parsers don't match the column names: FlowIndex
+  mutate(IC=as.numeric(Site_IC_Data$CumPctIC[match(Site, 
+                                                   Site_IC_Data$Site)])) %>%
+  mutate(Yearf = factor(Year))
+#> New names:
+#> * `` -> ...1
+#> Warning: The following named parsers don't match the column names: X1, FlowIndex
 ```
 
 ### Cleanup
 
 ``` r
 rm(Site_IC_Data, weather_data)
+#> Warning in rm(Site_IC_Data, weather_data): object 'weather_data' not found
 rm(fn, fpath, parent, sibling, sibfldnm)
 ```
 
 ## Data Correction
 
-### Anomolous Depth Values
+### Anomalous Depth Values
 
 Several depth observations in the record appear highly unlikely. In
 particular, several observations show daily median water depths over 15
@@ -317,7 +286,7 @@ full_data %>%
 #> Warning: Removed 1214 rows containing missing values (geom_point).
 ```
 
-<img src="Chloride_Analysis_Summary_files/figure-gfm/unnamed-chunk-8-1.png" style="display: block; margin: auto;" />
+<img src="Chloride_Analysis_Summary_files/figure-gfm/unnamed-chunk-7-1.png" style="display: block; margin: auto;" />
 
 We remove the Chloride value from the data.
 
@@ -459,7 +428,7 @@ We proceed with analyses that omits Site S06B.
 ``` r
 reduced_data <- full_data %>%
   select (Site, Year, Month, DOY,
-          Precip, lPrecip, PPrecip, wlPrecip,
+          Precip, lPrecip, wPrecip, wlPrecip,
           D_Median, lD_Median,
           Chl_Median, 
           IC, FlowIndex) %>%
@@ -596,7 +565,7 @@ summary(chl_gamm$gam)
 plot(chl_gamm$gam)
 ```
 
-<img src="Chloride_Analysis_Summary_files/figure-gfm/unnamed-chunk-18-1.png" style="display: block; margin: auto;" /><img src="Chloride_Analysis_Summary_files/figure-gfm/unnamed-chunk-18-2.png" style="display: block; margin: auto;" /><img src="Chloride_Analysis_Summary_files/figure-gfm/unnamed-chunk-18-3.png" style="display: block; margin: auto;" />
+<img src="Chloride_Analysis_Summary_files/figure-gfm/unnamed-chunk-17-1.png" style="display: block; margin: auto;" /><img src="Chloride_Analysis_Summary_files/figure-gfm/unnamed-chunk-17-2.png" style="display: block; margin: auto;" /><img src="Chloride_Analysis_Summary_files/figure-gfm/unnamed-chunk-17-3.png" style="display: block; margin: auto;" />
 Note that the function for recent weighted precipitation is nearly
 linear, while the effect of present-day precipitation is near zero for
 low to moderate rainfall, but drops quickly for rainfall over about 4 cm
@@ -624,7 +593,7 @@ significance, but on estimation.
 gam.check(chl_gamm$gam)
 ```
 
-<img src="Chloride_Analysis_Summary_files/figure-gfm/unnamed-chunk-19-1.png" style="display: block; margin: auto;" />
+<img src="Chloride_Analysis_Summary_files/figure-gfm/unnamed-chunk-18-1.png" style="display: block; margin: auto;" />
 
     #> 
     #> 'gamm' based fit - care required with interpretation.
@@ -633,8 +602,8 @@ gam.check(chl_gamm$gam)
     #> indicate that k is too low, especially if edf is close to k'.
     #> 
     #>                k'  edf k-index p-value    
-    #> s(lPrecip)   9.00 6.60    0.97   0.015 *  
-    #> s(wlPrecip)  9.00 3.91    0.90  <2e-16 ***
+    #> s(lPrecip)   9.00 6.60    0.98    0.05 *  
+    #> s(wlPrecip)  9.00 3.91    0.91  <2e-16 ***
     #> s(FlowIndex) 9.00 8.45    0.88  <2e-16 ***
     #> ---
     #> Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
@@ -642,9 +611,10 @@ gam.check(chl_gamm$gam)
 As with the linear model, we have a skewed, slightly heavy tailed
 distribution of residuals, with a couple of very large outliers. There
 is perhaps slight evidence for lack of complete independence between
-residuals and predictors. T his model is adequate, but not great. For
-careful work, we should probably use bootstrapped confidence intervals
-or something similar, but for our purposes, that is probably overkill.
+residuals and predictors.  
+This model is adequate, but not great. For careful work, we should
+probably use bootstrapped confidence intervals or something similar, but
+for our purposes, that is probably overkill.
 
 ## Checking Estimated Marginal Means
 
@@ -715,7 +685,7 @@ plot(a) +
 #> Warning: Removed 1 rows containing missing values (geom_vline).
 ```
 
-<img src="Chloride_Analysis_Summary_files/figure-gfm/unnamed-chunk-21-1.png" style="display: block; margin: auto;" />
+<img src="Chloride_Analysis_Summary_files/figure-gfm/unnamed-chunk-20-1.png" style="display: block; margin: auto;" />
 
 ``` r
 labl <- 'Values Adjusted to Median Flow and\nMedian 10 Day Precipitation\nAll Dates Combined'
@@ -747,7 +717,7 @@ plot(a) +
 #> Warning: Removed 1 rows containing missing values (geom_vline).
 ```
 
-<img src="Chloride_Analysis_Summary_files/figure-gfm/unnamed-chunk-23-1.png" style="display: block; margin: auto;" />
+<img src="Chloride_Analysis_Summary_files/figure-gfm/unnamed-chunk-22-1.png" style="display: block; margin: auto;" />
 
 ## Visualizing Trends
 
@@ -788,7 +758,7 @@ EXCEPT S17, where we have fewer years of data.
 plot(b)
 ```
 
-<img src="Chloride_Analysis_Summary_files/figure-gfm/unnamed-chunk-25-1.png" style="display: block; margin: auto;" />
+<img src="Chloride_Analysis_Summary_files/figure-gfm/unnamed-chunk-24-1.png" style="display: block; margin: auto;" />
 And those trends are NOT statistically different.
 
 ``` r
@@ -813,7 +783,7 @@ ggplot(df, aes(x = Year, y = pred, color = Site)) +
   theme_cbep(base_size = 12)
 ```
 
-<img src="Chloride_Analysis_Summary_files/figure-gfm/unnamed-chunk-26-1.png" style="display: block; margin: auto;" />
+<img src="Chloride_Analysis_Summary_files/figure-gfm/unnamed-chunk-25-1.png" style="display: block; margin: auto;" />
 
 # Model without the interactions.
 
@@ -914,7 +884,7 @@ marginally not significant in this simplified model.
 plot(revised_gamm$gam)
 ```
 
-<img src="Chloride_Analysis_Summary_files/figure-gfm/unnamed-chunk-29-1.png" style="display: block; margin: auto;" /><img src="Chloride_Analysis_Summary_files/figure-gfm/unnamed-chunk-29-2.png" style="display: block; margin: auto;" /><img src="Chloride_Analysis_Summary_files/figure-gfm/unnamed-chunk-29-3.png" style="display: block; margin: auto;" />
+<img src="Chloride_Analysis_Summary_files/figure-gfm/unnamed-chunk-28-1.png" style="display: block; margin: auto;" /><img src="Chloride_Analysis_Summary_files/figure-gfm/unnamed-chunk-28-2.png" style="display: block; margin: auto;" /><img src="Chloride_Analysis_Summary_files/figure-gfm/unnamed-chunk-28-3.png" style="display: block; margin: auto;" />
 
 ## Diagnostic Plots
 
@@ -928,7 +898,7 @@ significance, but on estimation.
 gam.check(revised_gamm$gam)
 ```
 
-<img src="Chloride_Analysis_Summary_files/figure-gfm/unnamed-chunk-30-1.png" style="display: block; margin: auto;" />
+<img src="Chloride_Analysis_Summary_files/figure-gfm/unnamed-chunk-29-1.png" style="display: block; margin: auto;" />
 
     #> 
     #> 'gamm' based fit - care required with interpretation.
@@ -937,9 +907,9 @@ gam.check(revised_gamm$gam)
     #> indicate that k is too low, especially if edf is close to k'.
     #> 
     #>                k'  edf k-index p-value    
-    #> s(lPrecip)   9.00 6.61    0.99    0.32    
-    #> s(wlPrecip)  9.00 3.92    0.90  <2e-16 ***
-    #> s(FlowIndex) 9.00 8.46    0.88  <2e-16 ***
+    #> s(lPrecip)   9.00 6.61    0.96   0.005 ** 
+    #> s(wlPrecip)  9.00 3.92    0.91  <2e-16 ***
+    #> s(FlowIndex) 9.00 8.46    0.89  <2e-16 ***
     #> ---
     #> Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 
@@ -1002,7 +972,7 @@ significance, but on estimation.
 gam.check(years_gamm$gam)
 ```
 
-<img src="Chloride_Analysis_Summary_files/figure-gfm/unnamed-chunk-32-1.png" style="display: block; margin: auto;" />
+<img src="Chloride_Analysis_Summary_files/figure-gfm/unnamed-chunk-31-1.png" style="display: block; margin: auto;" />
 
     #> 
     #> 'gamm' based fit - care required with interpretation.
@@ -1011,8 +981,8 @@ gam.check(years_gamm$gam)
     #> indicate that k is too low, especially if edf is close to k'.
     #> 
     #>                k'  edf k-index p-value    
-    #> s(lPrecip)   9.00 6.61    1.01    0.86    
-    #> s(wlPrecip)  9.00 3.87    0.95  <2e-16 ***
+    #> s(lPrecip)   9.00 6.61    0.99    0.17    
+    #> s(wlPrecip)  9.00 3.87    0.94  <2e-16 ***
     #> s(FlowIndex) 9.00 8.49    0.89  <2e-16 ***
     #> ---
     #> Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1

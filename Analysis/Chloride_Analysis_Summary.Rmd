@@ -30,11 +30,12 @@ on a robust regression relationship developed over several years.
 
 This R Notebook reviews the model we end up using to analyze chloride levels in
 Long Creek. We examined numerous models before settling on this one.  Details
-of some of those models is available in the "Chloride_Analysis.Rmd" notebook.
+of some of those models are available in the more complete SoCB GitHub 
+[archive](https://github.com/CBEP-SoCB-Details/LCWMD_Monitoring).
 
 Several more complex models are "better" using conventional measures of 
 statistical significance or information criteria.  We selected a slightly 
-simpler model, largely as it makes explaining the model more direct.
+simpler model, principally bvecause it makes explaining the model more direct.
 
 Our interest focuses on answering three questions:  
 1.  What is the effect of time of year (Month, or Day of Year) on chlorides?  
@@ -46,14 +47,17 @@ We use a Generalized Additive Model, with autocorrelated errors to explore
 these questions.  The model has the following form:
 
 $$ 
-\begin{align}
-log(Chlorides) &= f(Covariates) + \\
-&\qquad \beta_{1,i} Site_i + 
-\beta_{2,j} Month_j + \beta_3 Year + \beta_{4,i} Site_i * Year + \epsilon
-\end{align}
+log(\text{Chlorides}) = f(\text{Covariates}) +
+\beta_{1,i} \text{Site}_i + 
+\beta_{2,j} \text{Month}_j + \beta_3 \text{Year} + \beta_{4,i} \text{Site}_i * \text{Year} + u_{t}
 $$
 
-Where:
+
+$$
+u_{t} = a_{1} u_{t−1} + \epsilon_{t} \text{ is the autocorrelated error}
+$$
+
+Where:  
 *  covariates include three terms:  
    --  Daily precipitation  
    --  Weighted precipitation from the prior nine days  
@@ -61,14 +65,14 @@ Where:
 * The core predictors enter the model as standard linear terms  
 * The error i an AR(1) correlated error.
 
-We abuse the autocorrelation models slightly, since we use sequential
+We abuse the autocorrelation model slightly, since we use sequential
 autocorrelations (not time-based) and we don't fit separate autocorrelations for
 each site and season. That should have little impact on results, as transitions
 are relatively rare in a dense data set, and missing values at the beginning of
 each season at each site prevent estimation near season and site transitions in
 the sequential data anyway.
 
-On the whole, this models is OK, but not great. It has heavy tailed, skewed 
+On the whole, these models are OK, but not great. They have heavy tailed, skewed 
 residuals. We should not trust the asymptotic p values. But since sample sizes 
 are large and results tend to have high statistical significance, p values are
 not much use anyway.
@@ -150,7 +154,8 @@ full_data <- read_csv(fpath,
         FlowIndex = col_double())) %>%
   mutate(Site = factor(Site, levels=levels(Site_IC_Data$Site))) %>%
   mutate(Month = factor(Month, levels = month.abb)) %>%
-  mutate(IC=as.numeric(Site_IC_Data$CumPctIC[match(Site, Site_IC_Data$Site)])) %>%
+  mutate(IC=as.numeric(Site_IC_Data$CumPctIC[match(Site, 
+                                                   Site_IC_Data$Site)])) %>%
   mutate(Yearf = factor(Year))
 ```
 
@@ -162,7 +167,7 @@ rm(fn, fpath, parent, sibling, sibfldnm)
 
 ## Data Correction
 
-### Anomolous Depth Values
+### Anomalous Depth Values
 Several depth observations in the record appear highly unlikely. In particular,
 several observations show daily median water depths over 15 meters. And
 those observations were recorded in May or June, at site S05, with no associated 
@@ -299,12 +304,11 @@ gracefully, `gls()` does not.)
 xtabs(~ Site + Year, data = full_data)
 ```
 
-
 We proceed with analyses that omits Site S06B.
 ```{r}
 reduced_data <- full_data %>%
   select (Site, Year, Month, DOY,
-          Precip, lPrecip, PPrecip, wlPrecip,
+          Precip, lPrecip, wPrecip, wlPrecip,
           D_Median, lD_Median,
           Chl_Median, 
           IC, FlowIndex) %>%
@@ -393,10 +397,11 @@ since our focus is not on statistical significance, but on estimation.
 ```{r}
 gam.check(chl_gamm$gam)
 ```
+
 As with the linear model, we have a skewed, slightly heavy tailed distribution
 of residuals, with a couple of very large outliers. There is perhaps slight
-evidence for lack of complete independence between residuals and predictors.  T
-his model is adequate, but not great.  For careful work, we should probably use
+evidence for lack of complete independence between residuals and predictors.  
+This model is adequate, but not great.  For careful work, we should probably use
 bootstrapped confidence intervals or something similar, but for our purposes, 
 that is probably overkill.
 
@@ -511,8 +516,6 @@ ggplot(df, aes(x = Year, y = pred, color = Site)) +
   theme_cbep(base_size = 12)
 ```
 
-
-
 # Model without the interactions.
 This model takes several minutes to run (more than 5, less than 15)
 ```{r revised_gamm_1, cache = TRUE}
@@ -532,7 +535,6 @@ if (! file.exists("models/revised_gamm.rds")) {
   revised_gamm <- readRDS("models/revised_gamm.rds")
 }
 ```
-
 
 ## ANOVA
 ```{r}
