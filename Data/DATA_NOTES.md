@@ -35,7 +35,7 @@ Chloride values were calculated from specific conductance based on a multi-year
 specific conductance-chloride linear regression. R^2 values are on the 
 order of  0.9.  Detailed statistical analysis shows that the relationship is not 
 strictly linear, but deviations from linearity have little practical import.  
-The presence of a outliers also suggests some care in interpreting 
+The presence of outliers also suggests some care in interpreting 
 individual extreme values. 
 
 2.  **Site_IC_Data.csv** --  Simplified data of
@@ -97,7 +97,7 @@ precipitation.
 A large CSV file, containing daily summaries of the data contained in 
 `Sonde_Data.csv`.  The summaries include: minimum (min), maximum (max), median, 
 mean, standard  deviation ('sd'), interquartile range ('IQr') and sample size 
-('n') for all numeric values (excpet precipitation)  found in `sonde_data.csv`. 
+('n') for all numeric values (except precipitation)  found in `sonde_data.csv`. 
 The order of columns is 
 
 Column Name | Contents                   | Units / Values  
@@ -114,7 +114,7 @@ MaxT        | Daily maximum air temp.    | tenths of degree C
 
 We replaced the precipitation data from the `sonde_data.csv` file with
 newly downloaded weather data. We added daily maximum temperature data from that 
-same source.  Both are in tenths of teir customary units.
+same source.  Both are in tenths of their customary units.
 
 5.  **Exceeds_Data.csv**  -- Data derived from *Daily_Data.csv* containing flags
     that indicate whether conditions that day exceeded acute or chronic exposure
@@ -146,7 +146,7 @@ same source.  Both are in tenths of teir customary units.
     thresholds based on research on thermal tolerance of brook trout in streams.
     A study from Michigan and Wisconsin, showed that trout are found in streams
     with daily mean water temperatures as high as 25.3°C, but only if the period
-    of exceedence of that daily average temperature is short -- only one day.
+    of exceedance of that daily average temperature is short -- only one day.
     Similarly, the one day daily maximum temperature above which trout were not
     found was 27.6°C.
     
