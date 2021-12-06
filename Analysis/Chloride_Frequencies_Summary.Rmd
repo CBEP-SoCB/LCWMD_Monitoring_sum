@@ -20,8 +20,8 @@ knitr::opts_chunk$set(fig.align = 'center',
 
 # Introduction
 The Long Creek Watershed, almost three and a half square miles in area, is
-dominated by commercial land use. The Maine Mall is one of the largest land
-owners in the watershed, and it is surrounded by a range of commercial
+dominated by commercial land use. The Maine Mall is one of the largest 
+landowners in the watershed, and it is surrounded by a range of commercial
 businesses, from medical offices, to car washes.  About a third of the watershed
 in impervious surfaces like roads, parking lots, and rooftops.
 
@@ -82,8 +82,9 @@ measurement of conductivity.  The chloride-conductivity correlations is fairly
 close and robust, but estimation is an additional source of error, although 
 generally on the level of 10% or less.
 
-Further, exceedences of the acute chloride threshold, the "CMC" are relatively 
-rare, which limits ability to construct robust models.
+Further, exceedances of the acute chloride threshold, the "CMC" are relatively 
+rare, which limits ability to construct robust models. The classification tree 
+models in "Classification_Tree_Models_Summary.Rmd" are perhaps more successful.
 
 # Import Libraries  
 ```{r libraries}
@@ -106,7 +107,7 @@ library(LCensMeans)
 # Data Preparation
 ## Folder References
 ```{r folders}
-sibfldnm    <- 'Derived_Data'
+sibfldnm    <- 'Data'
 parent      <- dirname(getwd())
 sibling     <- file.path(parent,sibfldnm)
 
@@ -143,16 +144,15 @@ Site_IC_Data
 ```
 
 ## Main Data
-We remove 2019 data, as we don't have a complete year's worth of data, which may
-bias annual summaries.
+We removed the  2019 data, as we don't have a complete year's worth of data, 
+which may bias annual summaries.
 
-Note that this data does NOT include all of the predictors used in some models
-looking at chlorides. In particular, it does not include stream flow estimates 
+Note that this data does *not* include all of the predictors used in some models
+looking at chlorides. In particular, it does not include stream flow estimates. 
 ```{r main_data}
 fn <- "Exceeds_Data.csv"
 exceeds = read_csv(file.path(sibling, fn), progress=FALSE) %>%
   mutate(IC=Site_IC_Data$CumPctIC[match(Site, Site_IC_Data$Site)]) %>%
-  select(-X1) %>%
   filter(Year < 2019) %>%
   mutate(Site = factor(Site, levels=levels(Site_IC_Data$Site)),
          year_f = factor(Year),
@@ -167,7 +167,7 @@ exceeds = read_csv(file.path(sibling, fn), progress=FALSE) %>%
 ```
 
 ## Data Corrections
-### Anomolous Depth Values
+### Anomalous Depth Values
 Several depth observations in the record appear highly unlikely. In particular,
 several observations show daily median water depths over 15 meters. A few other
 observations show daily median depths over 4 meters, which also looks unlikely
@@ -181,7 +181,7 @@ We remove these extreme values.  The other daily medians in May and June of 2015
 appear reasonable, and we leave them in place, although given possible 
 instability of the pressure sensors, it might make sense to remove them all.
 
-Note that removing depth observations from Site S05  will remove those DATES
+Note that removing depth observations from Site S05  will remove those dates
 from any model that uses the `FlowIndex` variable (see below) as a predictor.
 ```{r correct_depth_data}
 exceeds <- exceeds %>%
@@ -204,8 +204,7 @@ exceeds <- exceeds %>%
                               NA, ChlCMC))
 ```
 
-### Anomolous Dissolved Oxygen and Chloride Values
-
+### Anomalous Dissolved Oxygen and Chloride Values
 We noted  extreme dissolved oxygen data at Site S03, during the end of 2016.
 Values were both extreme and highly variable. (See discussion in the DO 
 Analysis workbooks). We decided we should remove both the chloride and oxygen
@@ -284,7 +283,7 @@ rm(depth_data)
 
 ## Remove Site S06B, Trim Data
 Site S06B only has chloride data from a single year, so including it in temporal
-models causes problems.  We removing the Site from further analysis. We also
+models causes problems.  We remove the Site from further analysis. We also
 drop variables we will not analyze further in this Notebook.
 
 ```{r remove_S06B}
@@ -328,8 +327,7 @@ xt_pct(~Site + ChlCMC, exceeds)
 Note that those probabilities are very low -- under 1% -- which is likely to 
 limit ability to fit models to these data.
 
-# CCC
-## Exploratory Graphics 
+# Exploratory Graphics 
 These are estimated as empirical relative frequencies, with error estimated 
 as two times the standard error of the estimate.
 ```{r Site_exploratory_graphic}
@@ -348,8 +346,8 @@ exceeds %>%
 2016 was a rough year at most sites.  Sites S01 and S03 fail this standard
 frequently.
 
-Note that for some year at site S05, we never had a failure to meet this 
-chloride standard.  This will probably limit the models we can fit.
+Note that for some years at site S05, we never had a failure to meet this 
+chloride standard.  This will probably further limit the models we can fit.
 
 ```{r month_exploritory_graphic}
 exceeds  %>%
@@ -366,79 +364,24 @@ That shows that 2011 and 2016 were fairly bad years.  But the month to month
 patterns are less obvious than the year to year patterns  This highlights the 
 role of relativity slow-dynamic processes (drought? groundwater flow?) in 
 shaping chloride conditions in Long Creek.
- 
-## Generalized Linear Models
-We start with binomial GLM models.  Although daily status is almost certainly
-NOT independent in time, we start without addressing autocorrelation, to help
-us get a grip on patterns in the data with models that are less time consuming 
-to fit.
-```{r month_glm}
-month_glm <- glm(ChlCCC ~ year_f + Site + 
-                   month_f  + MaxT + lPrecip +  FlowIndex,
-              family = 'binomial',
-                   data = exceeds, maxit = 100)
-```
 
-```{r step_glm}
-step_month <- step(month_glm)
-```
+# GAMM models
+Fitting full GAMM models proves to be problematic, as models took a long time
+to fit.  The big slow down is the correlation structure.  It speeds things 
+slightly to subdivide the sections in which we expect the `corAR1()` to apply.
 
-```{r}
-anova(step_month, test = 'LRT')
-```
+We need to include either a smoothed term or a random factor in the model to use
+GAMM, even with a correlation term.  That is problematic, as none of our
+predictors are good candidates for random factors. Sites could be considered a
+random selection from all possible sites, or Year could be considered a random
+selection from all possible years, but we are interested in estimates of year by
+year and site by site differences.
 
-Air temperature drops out as an important variable.  Although the step procedure 
-retains a precipitation term, it is not statistically significant by LRT, so we 
-drop it as well.
-
-### Model Alternatives
-```{r glm_model_alternatives}
-month_alt <- glm(ChlCCC ~ year_f + Site + 
-                   month_f + FlowIndex,
-              family = 'binomial',
-                   data = exceeds, maxit = 100)
-
-season_alt <- glm(ChlCCC ~ year_f + Site + 
-                   season + FlowIndex,
-              family = 'binomial',
-                   data = exceeds, maxit = 100)
-
-year_alt <- glm(ChlCCC ~ Site + year_f + FlowIndex,
-              family = 'binomial',
-                   data = exceeds, maxit = 1000)
-
-anova(year_alt, season_alt, month_alt, test = 'LRT')
-```
-
-The change in deviance for these reduced models is huge, so it would be nice to 
-be able to model conditions month to month, but model instabilities make that
-problematic, as we will see. The likely problem is that some combinations
-of Site + Year + Month had no observed violations of standards, while other
-combinations always or almost always violated standards.  That poses 
-significant challenges for logistic regression models.
-
-### Extract Marginal Means
-Marginal Means from these linear models are reasonable, but because we have not
-addressed autocorrelation yet, we don't really believe the standard errors.
-```{r glm_mm}
-emmeans(month_alt, ~ year_f, cov.reduce = median,
-        type = 'response')
-emmeans(month_alt, ~ Site, cov.reduce = median,
-        type = 'response')
-```
-
-## Models with Autocorrelated Error
-We fit a generalized linear mixed model, with autocorrelated error. Our primary 
-interest, is in a GLM with an `covAR1()` correlation structure.
-
-### Fitting with glmmTMB
-According to the 'covstruct' vignette for `glmTMB`, we can fit models with 
-autocorrelation structure, but we need to replace the nominal time variable
-with a factor, to ensure missing values are properly addressed during fitting.
-(this may actually NOT be essential for dates, since they are integers under the
-hood, but it's best to follow the instructions....).
-
-Creating a factorized version of the dates is surprisingly tricky.
+We replace actual dates with sequential integers, simplifying model fitting.
+Although R `Date` objects are integers under the hood, limiting possible values
+to a smaller range was essential for fitting models with `glmmTMB()`, and it
+appears to speed model fitting. We make the transformation via factors (which
+are also integers under the hood).
 ```{r create_time_variable}
 first_date <- min(exceeds$sdate)
 last_date <- max(exceeds$sdate)
@@ -451,302 +394,16 @@ exceeds <- exceeds %>%
                                        by = 1))))
 ```
 
-The model takes a couple of minutes to run.
-```{r glmm_model}
-system.time(ccc_glmm<- glmmTMB(ChlCCC ~ Site + year_f + month_f +
-                                 FlowIndex +
-                                     ar1(sdate_f + 0 | Site),
-              family = 'binomial',
-              data = exceeds))
-
-summary(ccc_glmm)
-```
-
-Including autocorrelated errors reduces apparent significance of some
-model parameters, as anticipated.  For the most part, the changes make some sort
-of scientific sense as well.
-
-#### Extract Marginal Means -- Failure
-```{r glmm_mm}
-emmeans(ccc_glmm, ~ year_f, cov.reduce = median,
-        type = 'response')
-emmeans(ccc_glmm, ~ Site, cov.reduce = median,
-        type = 'response')
-```
-
-So despite what look like reasonable model parameters, the marginal means are
-wonky. We should be seeing intermediate values for most marginal means, but that
-is not what we see.  Predicted marginal means are basically $p = 0$ or $P = 1$,
-except for `Site == S17`.
-
-#### Try Predictions
-```{r glmm_predicts}
-df <- tibble(Site = 'S05',
-             MaxT = 250,     # Temp in tenths of a degree C
-             month_f =  'Jul',
-             FlowIndex = median(exceeds$FlowIndex, na.rm = TRUE),
-             Year = c(2011, 2015),
-             year_f = c('2011', '2015'),
-             sdate_f = c('2011-07-15', '2015-07-15')
-             )
-
-predict(ccc_glmm, newdata = df, se.fit= TRUE)
-```
-A logit of 9.5, is getting close to where probabilities are over 99%, and the
-related standard errors are extreme, suggesting we learn very little from this
-model.
-
-#### Many Models Fail
-We examined multiple nested models, and all have similar problems.  Marginal
-means and predictions are "locked" at or close to $p = 0$ or $p = 1$. Only
-the simplest models do well.
-
-We first fit a model that includes a term for the month of the year, but the 
-model has moderately elevated standard errors, and fails to generate meaningful 
-predictions, almost certainly because of the "Hauck-Donner effect."
-```{r glmm_2}
-system.time(ccc_glmm_3<- glmmTMB(ChlCCC ~ Site + month_f + year_f + 
-                                     ar1(sdate_f + 0| Site),
-              family = 'binomial',
-              data = exceeds))
-
-summary(ccc_glmm_3)
-```
-
-```{r glmm_2_mm}
-emmeans(ccc_glmm_3, ~ year_f, cov.reduce = median,
-        type = 'response')
-emmeans(ccc_glmm_3, ~ Site, cov.reduce = median,
-        type = 'response')
-```
-
-
-```{r glmm_3}
-system.time(ccc_glmm_4<- glmmTMB(ChlCCC ~ Site + year_f + 
-                                     ar1(sdate_f + 0| Site),
-              family = 'binomial',
-              data = exceeds))
-
-summary(ccc_glmm_4)
-```
-
-
-```{r glmm_3_mm}
-(a <- emmeans(ccc_glmm_4, ~ year_f, cov.reduce = median,
-        type = 'response'))
-(b <- emmeans(ccc_glmm_4, ~ Site, cov.reduce = median,
-        type = 'response'))
-```
-
-
-```{r plot_glmm_3}
-plot(a)
-plot(b)
-```
-
-So marginal means (and presumably predictions) are still unreasonable. 
-
-### Fit a GAM
-The target GAMM model, with autocorrelation structure and multiple took forever 
-to run (overnight was not enough).  So, we start by fitting a version without
-autocorrelation in hopes of identifying appropriate model scope and structure.
-We need to include at least one smoothing term to use GAM models.
-
-#### Initial Model
-Interestingly, models fit with GAM appear to generate much more reasonable 
-predictions and marginal means.
-
-First, we select a limited data set to enable model comparisons.
-```{r filter_data}
-tmp <- exceeds %>%
-  filter(! is.na(FlowIndex) & ! is.na(lD_Median))
-```
-
-
-```{r initial_gam}
-system.time(ccc_gam<- gam(ChlCCC ~ Site + year_f + month_f +
-                            s(FlowIndex, k = 4),
-                    family = 'binomial',
-                    niterPQL = 20,
-                    data = tmp))
-```
-
-```{r}
-anova(ccc_gam)
-```
-
-Note that the Year term has an estimated chi square value of zero.  That is 
-because we have serious estimation problems.
-
-```{r}
-summary(ccc_gam)
-```
-
-```{r initial_gam_mm}
-(a <- emmeans(ccc_gam, ~ year_f, cov.reduce = median,
-        type = 'response'))
-(b <- emmeans(ccc_gam, ~ Site, cov.reduce = median,
-        type = 'response'))
-```
-
-```{r plot_inital_gam_mm}
-plot(a)
-plot(b)
-```
-So, GAMS appear to generate meaningful marginal means.  We 
-
-
-```{r plot_inital_gam_smooths}
-plot(ccc_gam)
-```
-
-So, probability of passing the chloride standard is higher at higher flows, as
-one might expect based on first principals.  Lets see if that holds true if we
-split the fit by site.
-
-#### Alternate Structures, with Flow Corrections by Site
-```{r gam_1}
-system.time(ccc_gam_1<- gam(ChlCCC ~ Site + year_f + month_f +
-                            s(FlowIndex, by = Site, k = 4),
-                    family = 'binomial',
-                    niterPQL = 20,
-                    data = tmp))
-```
-
-
-Or if we fit local stream depth instead of watershed flow.
-```{r gam_2}
-ccc_gam_2<- gam(ChlCCC ~ Site + year_f + month_f + s(lD_Median, by = Site, k = 4),
-                    family = 'binomial',
-                    niterPQL = 50, verbosePQL = TRUE,
-                    data = tmp)
-```
-
-```{r anova_gams}
-anova(ccc_gam_2, ccc_gam_1, ccc_gam)
-AIC(ccc_gam_2, ccc_gam_1, ccc_gam)
-```
-So we can do a better job fitting the effect of flow differently by site, and 
-better yet if we use local depth data.
-
-
-```{r plot_gam_1_smooths}
-plot(ccc_gam_1)
-```
-
-This effect is meaningfully different at Site S03, but is otherwise fairly
-consistent across sites.
-
-The effect of water depth matters everywhere, but it totally 
-dominates at site S03.  Notice that the vertical axes on the following plots are 
-not equal.
-```{r r plot_gam_2_smooths}
-plot(ccc_gam_2, scale = 0)
-```
-So each site responds idiosyncratically to water depth.  Generally,
-conditions are worst at low local water depth, but they level out --
-and errors get much wider -- at higher water depths. The main exception is at 
-site S03 (The North Branch) where conditions are exceptionally bad for some high
-flow conditions perhaps snow melt events?
-
-
-#### Fit Just Summer Months
-When we fit similar models that left out the snow and ice months, the general
-results were similar.  Site S03 does weird things under high water depth
-conditions, and does not respond to watershed flow conditions the way the other 
-sites do.
-
-(Not shown) 
-
-#### Extract Marginal Means -- Not Meaningful
-We could compare marginal means, but marginal means at all Sites
-are estimated at the same depth (median of all depths) at each site, which is
-not especially meaningful.  Normal flow depth at each site are naturally
-different.  We use predictions instead.
-
-#### Predictions
-We compare predictions (probabilities) for a July day in 2013 at median
-annual stream flow.
-```{r create_predictions_df}
-medians <- tmp %>%
-  select(Site, lD_Median) %>%
-  group_by(Site) %>%
-  summarize(medians = median(lD_Median, na.rm = TRUE),
-            .groups = 'drop') %>%
-  pull(medians)
-
-df <- tibble(Site = levels(tmp$Site),
-             lD_Median = medians,
-             month_f =  'Jul',
-             FlowIndex = median(tmp$FlowIndex, na.rm = TRUE),
-             Year = c(2013),
-             year_f = c('2013'),
-             sdate_f = c('2013-07-15')
-             )
-```
-
-```{r inv_logit_fxn}
-inv_logit <- function(x) {
-   exp(x)/(1+exp(x))
-}
-```
-
-```{r predicts_from_2_models}
-p <- predict(ccc_gam, newdata = df, se.fit= TRUE)
-pred_site_model_0 <- tibble(Site = df$Site,
-       prob = inv_logit(p$fit), 
-       lower_cl = inv_logit(p$fit - 2 * p$se.fit),
-       upper_cl = inv_logit(p$fit + 2 * p$se.fit))
-
-
-p2 <- predict(ccc_gam_2, newdata = df, se.fit= TRUE)
-pred_site_model_2 <- tibble(Site = df$Site,
-       prob = inv_logit(p2$fit), 
-       lower_cl = inv_logit(p2$fit - 2 * p2$se.fit),
-       upper_cl = inv_logit(p2$fit + 2 * p2$se.fit))
-```
-
-
-```{r plt_predicts}
-plt <- ggplot(data = NULL) +
-  geom_text(mapping = aes(x = pred_site_model_0$prob + 0.05,
-                           y = pred_site_model_2$prob + 0.05,
-                          label = pred_site_model_0$Site),
-             color = 'red', size = 3) +
-  geom_segment(mapping = aes(x = pred_site_model_0$lower_cl,
-                             y = pred_site_model_2$prob,
-                             yend = pred_site_model_2$prob,
-                             xend = pred_site_model_0$upper_cl)) +
-  geom_pointrange(mapping = aes(x = pred_site_model_0$prob, y = pred_site_model_2$prob,
-                      ymin = pred_site_model_2$lower_cl,
-                      ymax = pred_site_model_2$upper_cl)) +
-  geom_abline(intercept = 0, slope = 1) +
-  xlab ('Watershed Flow Model') +
-  ylab('Local Depth Model')
-plt
-```
-
-So the two models make rather different predictions.  Including flow data in the
-models makes for better models, but it points out differences in Site
-response to flow.
-
-## Fitting a GAMM model
-Fitting full GAMM models prove to be problematic, as models take a long time
-to fit.  The big slow down is the correlation structure.  It may speed things 
-slightly to subdivide the sections in which we expect the `corAR1()` to apply.
-
-We need to include either a smoothed term or a random factor in the model to use
-GAMM, even with a correlation term.  That is problematic, as none of our
-predictors are good candidates for random factors.  Sites could be considered a
-random selection from all possible sites, or Year could be considered a random
-selection from all possible years, but we are interested in estimates of year by
-year and site by site differences.
-
-### Model Sequence
+## Model Sequence
+### Largest Model: Site, year_f, month_f, and FlowIndex
 We start with a fairly large model, and wait for it to complete.  This took
-slightly more than an hour and a half (5500 seconds) of computational time to
-complete, as shown by `system.time()`, but the code took well over two hours
-to run.
+slightly more than an hour and a half (5500 seconds) of computational time, as
+shown by `system.time()`, but the code took over two hours to actually run.
+
+The code saves the model once it runs, but the model is not included in the
+GitHub repository.  The code does not detect changes in the underlying data, so
+users need to delete the models by hand if they need to be run again on new
+data.
 ```{r gamm_1, cache = TRUE}
 if (! file.exists("models/ccc_gamm_1.rds")) {
   print(system.time(
@@ -762,11 +419,21 @@ if (! file.exists("models/ccc_gamm_1.rds")) {
 }
 ```
 
+Marginal means from that model are likely to suffer from the Hauck-Donner 
+effect, since many cells in the model structure never fail water quality
+criteria.  Estimation from this model is therefore probably pointless, but it 
+can act as the largest model in a hierarchical model sequence.
+
+### Model 2:  Site, Year, and FlowIndex
 A model that omits the Month term also takes some time to fit. Marginal means
-from this model are potentially informative, if fit at median watershed flow.
-We are almost certainly misrepresenting the behavior of Site S03 in this model,
-so we should consider omitting `Site == S03` from similar models using a
-smoothed term based on watershed flow, but we do not do so here.
+from this model are potentially informative (if fit at median watershed flows).
+We are almost certainly misrepresenting the behavior of Site S03 in this model.
+Site S03 appears to be doing something quite different from the other sites, so 
+we should consider omitting `Site == S03` from models entirely, but we  do not 
+do so here.
+
+This model takes not quite as long to fit, but you'll  want to go do something 
+else for a while while this code runs. It takes a bit over an hour to run.
 ```{r gamm_2, cache = TRUE}
 if (! file.exists("models/ccc_gamm_2.rds")) {
   print(system.time(
@@ -787,11 +454,13 @@ other predictors to treat as a random factor.  We see substantial differences
 in probability of failing these standards by Site, so we try some models that
 treat `year_f` as a random factor.  You could fit a random factor two
 ways, using the `random = ....` function parameter, or by including a 
-random effects smooth term via `s(..., type = 're')`
+random effects smooth term via `s(..., type = 're')`.
+
+### Model 3: Site and Year
 ```{r gamm_3, cache = TRUE}
 if (! file.exists("models/ccc_gamm_3.rds")) {
   print(system.time(
-    ccc_gamm_3<- gamm(ChlCCC ~ Year + Site, random = list(year_f = ~ 1),
+    ccc_gamm_3<- gamm(ChlCCC ~ Site + Year, random = list(year_f = ~ 1),
                       correlation = corAR1(form = ~ as.numeric(sdate_f) | Site),
                       family = 'binomial',
                       niterPQL = 20, verbosePQL = TRUE,
@@ -803,6 +472,7 @@ if (! file.exists("models/ccc_gamm_3.rds")) {
 }
 ```
 
+### Model 4: Site Only
 ```{r gamm_4, cache = TRUE}
 if (! file.exists("models/ccc_gamm_4.rds")) {
   print(system.time(
@@ -818,6 +488,7 @@ if (! file.exists("models/ccc_gamm_4.rds")) {
 }
 ```
 
+### Model 5: Month Only
 ```{r gamm_5, cache = TRUE}
 if (! file.exists("models/ccc_gamm_5.rds")) {
   print(system.time(
@@ -833,29 +504,44 @@ if (! file.exists("models/ccc_gamm_5.rds")) {
 }
 ```
 
-#### Examine Two Models
+# Examine Full Model
+```{r}
+anova(ccc_gamm_1$gam)
+```
+
+All model terms appear important,  Both Month and Year are fit with factors, 
+which detects variation, but makes it difficult to draw clear conclusions.
+(But see below for consideration of whether there is a long-term trend or not).
+
 ```{r}
 summary(ccc_gamm_1$gam)
 ```
 
+Some sites and some years are just plain worse than others.  Chloride levels 
+are less likely to meet threshold in the spring and more likely to later in the 
+year.
+
 Note that the model fits a fairly complex smoothed term -- with over six
-effective degrees of freedom. One could argue that's too complex for this 
-purpose, but as we'll see, the term makes little difference to the functional 
-predictions from the model.
+effective degrees of freedom. A simpler model would capture most of the 
+important detail.
 
-```{r}
-summary(ccc_gamm_4$gam)
-anova(ccc_gamm_4$gam)
-
-```
-So, when you consider the years as random variables, there is no long-term trend in probability to fail chlorides standards.
-
-```{r plotgamm_1_smooth}
+```{r plot_gamm_1}
 plot(ccc_gamm_1$gam)
 ```
+# Is there a long term trend?
+Model three included a linear year term and treated years as a random factor, 
+thus effectively testing to see if there is a long term trend in probability of 
+meeting chloride standards if we pool results by year.
+```{r}
+anova(ccc_gamm_3$gam)
+```
+So, when you consider the years as random variables, there is no long-term trend 
+in probability to pass chlorides standards. Thus a long-term trend is present
+(in the full model) but whether you consider it important or not depends on 
+model specifications.
 
-### Extract Marginal Means
-#### Add Calls to GAM objects
+# Extract Marginal Means
+## Add Calls to GAM objects
 ```{r create_call_objects}
 the_call <-  quote(gamm(ChlCCC ~ Site + year_f + month_f + s(FlowIndex),
                        correlation = corAR1(form = ~ as.numeric(sdate_f) | Site),
@@ -894,27 +580,28 @@ the_call <-  quote(gamm(ChlCCC ~ Site + month_f, random = list(year_f = ~ 1),
                        niterPQL = 20,
                        data = exceeds))
 ccc_gamm_5$gam$call <- the_call
-
-
 ```
 
-
-#### By Site
+## By Site
 ```{r mm_by_site}
 my_ref_grid <- ref_grid(ccc_gamm_1,  cov.reduce = median) 
 a <- summary(emmeans(my_ref_grid, ~ Site, 
                       type = 'response'))
 
-my_ref_grid <- ref_grid(ccc_gamm_2,  cov.reduce = median) 
-b <-  summary(emmeans(my_ref_grid, ~ Site, 
+my_ref_grid <- ref_grid(ccc_gamm_2,  cov.reduce = median)
+b <-  summary(emmeans(my_ref_grid, ~ Site,
                        type = 'response'))
 
-my_ref_grid <- ref_grid(ccc_gamm_3,  cov.reduce = median) 
-c <-  summary(emmeans(my_ref_grid, ~ Site, 
+my_ref_grid <- ref_grid(ccc_gamm_3,  cov.reduce = median)
+c <-  summary(emmeans(my_ref_grid, ~ Site,
                        type = 'response'))
 
 my_ref_grid <- ref_grid(ccc_gamm_4,  cov.reduce = median) 
 d <-  summary(emmeans(my_ref_grid, ~ Site, 
+                       type = 'response'))
+
+my_ref_grid <- ref_grid(ccc_gamm_5,  cov.reduce = median) 
+e <-  summary(emmeans(my_ref_grid, ~ Site, 
                        type = 'response'))
 ```
 
@@ -929,7 +616,6 @@ observed <- exceeds %>%
               lower.CL = prob - 1.96 * SE,
               upper.CL = prob + 1.96 * SE,
               .groups = 'drop')
-observed
 ```
 
 ```{r compare_models_by_site_1}
@@ -938,18 +624,7 @@ z <- tibble(Site = factor(levels(exceeds$Site), levels = levels(exceeds$Site)),
             mod_1 = a$prob, mod_2 = b$prob,
             mod_3 = c$prob, mod_4 = d$prob)
 
-z %>%
-  pivot_longer(-Site, names_to = 'Model', 
-               values_to = 'Probability') %>%
-  ggplot(aes(Site, Probability, color = Model)) +
-  geom_point() +
-  geom_line(aes(group = Model)) +
-  ylab("Probability of Passing\nChronic Chloride Standard")
 
-```
-
-
-```{r compare_models_by_site_2}
 z %>%
   pivot_longer(-c(Site, observed), names_to = 'Model', 
                values_to = 'Probability') %>%
@@ -974,16 +649,15 @@ recent years.
 ```{r rm_z}
 rm(z)
 ```
-So, models 1 and 3 generally provide nearly identical predictions, but
+Models 1 and 3 generally provide nearly identical predictions, but
 for all practical purposes, the four models are all saying the 
-same thing. And Model 3 includes a not significant linear term by year.
+same thing.
 
 We prefer models 1, for access to data on year by year and month by month
 patterns, and model 4, for its simplicity.
 
-
-##### Graphics
-###### Model 1
+### Graphics
+#### Model 1
 ```{r plot_model_1_site}
 s <- a %>% 
   mutate(fprob = 1-prob,
@@ -1023,9 +697,7 @@ plt1 +
 
 ```
 
-###### We Don't Show Models 2 and 3
-
-###### Model 4
+#### Model 4
 ```{r plot_model_4_site}
 s <- d %>% 
   mutate(fprob = 1-prob,
@@ -1064,9 +736,9 @@ plt2 +
 
 ```
 
-#### By Year
+## By Year
 Only Model 1 and Model 2 tracked Year as a Fixed Factor, so we only have two
-models to compare here.
+models to compare. (Model 3 treated year as a regressor and random factor).
 ```{r create_year_mms}
 my_ref_grid <- ref_grid(ccc_gamm_1,  cov.reduce = median) 
 a <- summary(emmeans(my_ref_grid, ~ year_f, type = 'response'))
@@ -1074,7 +746,6 @@ a <- summary(emmeans(my_ref_grid, ~ year_f, type = 'response'))
 my_ref_grid <- ref_grid(ccc_gamm_2,  cov.reduce = median) 
 b <- summary(emmeans(my_ref_grid, ~ year_f, type = 'response'))
 ```
-
 
 ```{r create_observed_p_df}  
 observed <- exceeds %>%
@@ -1087,7 +758,6 @@ observed <- exceeds %>%
               lower.CL = prob - 1.96 * SE,
               upper.CL = prob + 1.96 * SE,
               .groups = 'drop')
-observed
 ```
 
 
@@ -1097,21 +767,6 @@ z <- tibble(Year = factor(levels(exceeds$year_f),
             observed = observed$prob, 
             mod_1 = a$prob, mod_2 = b$prob )
 
-```
-
-```{r compare_predicts_year_1}
-z %>%
-  pivot_longer(-Year, names_to = 'Model', 
-               values_to = 'Probability') %>%
-  ggplot(aes(Year, Probability, color = Model)) +
-  geom_point() +
-  geom_line(aes(group = Model)) +
-  ylab("Probability of Passing\nChronic Chloride Standard")
-
-```
-
-
-```{r compare_predicts_year_2}
 z %>%
   pivot_longer(-c(Year, observed), names_to = 'Model', 
                values_to = 'Probability') %>%
@@ -1128,24 +783,18 @@ z %>%
   xlim(0,1) +
   ylim(0,1)
 ```
-Here our marginal means show up not so well.  The model predictions are highly
-correlated, but neither model does very well reproducing observed frequencies,
-at least for 2010 and 2012. 2010 is a year with no data from the early part of
-the year, so marginal means from model are biased. It's not clear why
-estimates from 2012 are also on the high side, or why both sets of marginal 
-means are biased similarly.
+Here our marginal means do not show up so well.  The model predictions are
+highly correlated, but neither model does very well reproducing observed
+frequencies, at least for 2010 and 2012. 2010 is a year with no data from the
+early part of the year, so marginal means from either model are biased. It's not
+clear why estimates from 2012 are also on the high side.
 
 ```{r}
 rm(z)
 ```
 
-
-We prefer models 1, for access to data on year by year and month by month
-patterns, and model 4, for its simplicity.
-
-
-##### Graphics
-###### Model 1
+### Graphics
+#### Model 1
 ```{r fig.width = 4, fig.height = 3}
 s <- a %>% 
   mutate(fprob = 1-prob,
@@ -1167,7 +816,6 @@ plt1 <- ggplot(s, aes(year_f, fprob)) +
 
 
 ```{r}
-
 xanchor = 7
 space = 0.3
 
@@ -1185,13 +833,10 @@ plt1 +
            size = 2, color = cbep_colors()[1]) +
     annotate(geom = 'text', x = xanchor + space, y = .25, label = 'Adjusted', hjust = 0,
              size = 3.5)
-  
-
 ```
 
-
-###### Model 2
-```{r fig.width = 4, fig.height = 3}
+#### Model 2
+```{r}
 s <- b %>% 
   mutate(fprob = 1-prob,
          fUCL = 1 - lower.CL,
@@ -1203,7 +848,7 @@ plt2 <- ggplot(s, aes(year_f, fprob)) +
                 color = cbep_colors()[1], size = .75) +
   
   ylab('Probability of Exceeding\nChronic Chloride Standard') +
-  xlab('Upstream      Maine Stem                Downstream      ') +
+  xlab('') +
 
   theme_cbep(base_size = 12) +
   theme(axis.title.x = element_text(size = 9)) +
@@ -1219,23 +864,24 @@ plt2 +
                size = 2, shape = 23, fill = cbep_colors()[4]) +
     annotate(geom = 'point', x = xanchor, y = .3,
            size = 2, shape = 23, fill = cbep_colors()[4]) +
-    annotate(geom = 'text', x = 3.75, y = .3, label = 'Observed', hjust = 0,
+    annotate(geom = 'text', x = xanchor + space, y = .3, label = 'Observed', hjust = 0,
              size =3.5) +
 
     annotate(geom = 'point', x = xanchor, y = .25,
            size = 2, color = cbep_colors()[1]) +
-    annotate(geom = 'text', x = 3.75, y = .25, label = 'Adjusted', hjust = 0,
+    annotate(geom = 'text', x = xanchor + space, y = .25, label = 'Adjusted', hjust = 0,
              size = 3.5)
 ```
-  
 
-#### By Month
+## By Month
+Only Model 5 is fit with the `month_f` term.  When we included other predictors, 
+along with thE month, we ran into problems fitting the model.
 ```{r}
 my_ref_grid <- ref_grid(ccc_gamm_1,  cov.reduce = median) 
-(a <- summary(emmeans(my_ref_grid, ~ month_f, type = 'response')))
+a <- summary(emmeans(my_ref_grid, ~ month_f, type = 'response'))
 
 my_ref_grid <- ref_grid(ccc_gamm_5,  cov.reduce = median) 
-(b <- summary(emmeans(my_ref_grid, ~ month_f, type = 'response')))
+b <- summary(emmeans(my_ref_grid, ~ month_f, type = 'response'))
 
 observed <- exceeds %>%
   select(month_f, ChlCCC) %>%
@@ -1247,7 +893,6 @@ observed <- exceeds %>%
               lower.CL = prob - 1.96 * SE,
               upper.CL = prob + 1.96 * SE,
               .groups = 'drop')
-observed
 ```
 
 ```{r}
@@ -1281,20 +926,27 @@ z %>%
 ```
 There is a lot of scatter here.  The pattern is revealing.  Our "flow adjusted"
 monthly values are lower in winter and higher in summer than the observed
-values, while the simpler model without a flow term fits the observed values more closely.
+values, while the simpler model without a flow term fits the observed values 
+more closely.
 
-This reflects the influence of flow on our adjusted estimates. Low flow in
-summer means "observed" levels co-occur with low flow, so conditions would be
-better if flow were not so low.  Thus the "adjusted" means are slightly better
-than what we observed.
+This reflects the influence of flow on the marginal means. The usual low flow in
+summer means "observed" levels generally co-occur with low flow, when we now
+know chloride levels tend to be slightly higher, and thus probability of meeting
+the chloride standards slightly lower. As the algorithm adjusts the estimated
+probabilities to median flow (which is rare in the summer), it gives predictions
+for summer flows at median stream flow -- which is a rare event.  The
+predictions may be accurate, but they are not accurate regarding circumstances
+we actually observe in the field .  Thus the "adjusted" marginal means are
+slightly better than what we actually observed.
 
 ```{r}
 rm(z)
 ```
 
-##### Graphics
+### Graphic
+Based on simplified model, model 5.
 ```{r fig.width = 4, fig.height = 3}
-s <- a %>% 
+s <- b %>% 
   mutate(fprob = 1-prob,
          fUCL = 1 - lower.CL,
          fLCL = 1 - upper.CL)
@@ -1311,9 +963,7 @@ plt1 <- ggplot(s, aes(month_f, fprob)) +
   ylim(0,1)
 ```
 
-
 ```{r}
-
 xanchor = 1
 space = 0.3
 
@@ -1333,6 +983,4 @@ plt1 +
     annotate(geom = 'text', x = xanchor + space, y = .25, 
              label = 'Adjusted', hjust = 0,
              size = 3.5)
-  
-
 ```
