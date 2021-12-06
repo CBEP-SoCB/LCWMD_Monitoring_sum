@@ -59,11 +59,6 @@ average dissolved oxygen must stay above 6.5 mg/l.
 
 # Import Libraries  
 ```{r libraries}
-library(nlme)      # Supports glmmPQL()
-#library(MASS)      # for glmmPQL() function, which allows correlation in GLM
-
-#library(glmmTMB)   # An alternate -- possibly more robust -- fitting algorithm
-
 library(mgcv)     # For mixed effects GAMM models -- probably not needed here yet.
 
 library(tidyverse)  # Has to load after MASS, so `select()` is not masked
@@ -81,7 +76,7 @@ library(LCensMeans)
 # Data Preparation
 ## Folder References
 ```{r folders}
-sibfldnm    <- 'Derived_Data'
+sibfldnm    <- 'Data'
 parent      <- dirname(getwd())
 sibling     <- file.path(parent,sibfldnm)
 
@@ -127,7 +122,6 @@ looking at chlorides. In particular, it does not include stream flow estimates
 fn <- "Exceeds_Data.csv"
 exceeds = read_csv(file.path(sibling, fn), progress=FALSE) %>%
   mutate(IC=Site_IC_Data$CumPctIC[match(Site, Site_IC_Data$Site)]) %>%
-  select(-X1) %>%
   filter(Year < 2019) %>%
   mutate(Site = factor(Site, levels=levels(Site_IC_Data$Site)),
          year_f = factor(Year),
@@ -142,7 +136,7 @@ exceeds = read_csv(file.path(sibling, fn), progress=FALSE) %>%
 ```
 
 ## Data Corrections
-### Anomolous Depth Values
+### Anomalous Depth Values
 Several depth observations in the record appear highly unlikely. In particular,
 several observations show daily median water depths over 15 meters. A few other
 observations show daily median depths over 4 meters, which also looks unlikely
@@ -180,7 +174,7 @@ exceeds <- exceeds %>%
 ```
 
 
-### Anomolous Dissolved Oxygen and Chloride Values
+### Anomalous Dissolved Oxygen and Chloride Values
 #### Site S03, end of 2016
 We noted  extreme dissolved oxygen data at the end of 2016.  Values were
 both extreme and highly variable.  (See discussion in the DO Analysis workbooks).
@@ -341,7 +335,6 @@ do_gamm_two_trend_4<- gamm(ClassCDO ~ Site + Year,
                            data = exceeds_two)
 ```
 
-
 ```{r}
 anova(do_gamm_two_trend_4$gam, test = 'Chisq')
 ```
@@ -397,7 +390,8 @@ it is not very informative without overlaying it over real data.  But note the
 wide overlap of confidence intervals. Although the trend is significant,
 predictions year to year overlap.
 ```{r do_mm_by_years}
-my_ref_grid <- ref_grid(do_gamm_two_trend_2, cov.keep = 'Year', cov.reduce = median) 
+my_ref_grid <- ref_grid(do_gamm_two_trend_2, cov.keep = 'Year', 
+                        cov.reduce = median) 
 (b <- emmeans(my_ref_grid, ~ Year, type = 'response'))
 
 ```

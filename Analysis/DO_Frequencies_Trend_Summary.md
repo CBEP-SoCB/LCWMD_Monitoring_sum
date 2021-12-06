@@ -16,11 +16,11 @@ Curtis C. Bohlen, Casco Bay Estuary Partnership.
         Cover](#data-on-sites-and-impervious-cover)
     -   [Main Data](#main-data)
     -   [Data Corrections](#data-corrections)
-        -   [Anomolous Depth Values](#anomolous-depth-values)
+        -   [Anomalous Depth Values](#anomalous-depth-values)
         -   [Single S06B Chloride Observation from
             2017](#single-s06b-chloride-observation-from-2017)
-        -   [Anomolous Dissolved Oxygen and Chloride
-            Values](#anomolous-dissolved-oxygen-and-chloride-values)
+        -   [Anomalous Dissolved Oxygen and Chloride
+            Values](#anomalous-dissolved-oxygen-and-chloride-values)
     -   [Remove Partial Data from Winter
         Months](#remove-partial-data-from-winter-months)
     -   [Add Stream Flow Index](#add-stream-flow-index)
@@ -97,20 +97,22 @@ mg/l.
 # Import Libraries
 
 ``` r
-library(nlme)      # Supports glmmPQL()
-#library(MASS)      # for glmmPQL() function, which allows correlation in GLM
-
-#library(glmmTMB)   # An alternate -- possibly more robust -- fitting algorithm
-
 library(mgcv)     # For mixed effects GAMM models -- probably not needed here yet.
-#> This is mgcv 1.8-33. For overview type 'help("mgcv-package")'.
+#> Warning: package 'mgcv' was built under R version 4.0.5
+#> Loading required package: nlme
+#> This is mgcv 1.8-38. For overview type 'help("mgcv-package")'.
 
 library(tidyverse)  # Has to load after MASS, so `select()` is not masked
-#> -- Attaching packages --------------------------------------- tidyverse 1.3.0 --
-#> v ggplot2 3.3.3     v purrr   0.3.4
-#> v tibble  3.0.5     v dplyr   1.0.3
-#> v tidyr   1.1.2     v stringr 1.4.0
-#> v readr   1.4.0     v forcats 0.5.0
+#> Warning: package 'tidyverse' was built under R version 4.0.5
+#> -- Attaching packages --------------------------------------- tidyverse 1.3.1 --
+#> v ggplot2 3.3.5     v purrr   0.3.4
+#> v tibble  3.1.6     v dplyr   1.0.7
+#> v tidyr   1.1.4     v stringr 1.4.0
+#> v readr   2.1.0     v forcats 0.5.1
+#> Warning: package 'ggplot2' was built under R version 4.0.5
+#> Warning: package 'tidyr' was built under R version 4.0.5
+#> Warning: package 'dplyr' was built under R version 4.0.5
+#> Warning: package 'forcats' was built under R version 4.0.5
 #> -- Conflicts ------------------------------------------ tidyverse_conflicts() --
 #> x dplyr::collapse() masks nlme::collapse()
 #> x dplyr::filter()   masks stats::filter()
@@ -118,6 +120,7 @@ library(tidyverse)  # Has to load after MASS, so `select()` is not masked
 library(readr)
 
 library(emmeans)  # Provides tools for calculating marginal means
+#> Warning: package 'emmeans' was built under R version 4.0.5
 
 library(CBEPgraphics)
 load_cbep_fonts()
@@ -131,7 +134,7 @@ library(LCensMeans)
 ## Folder References
 
 ``` r
-sibfldnm    <- 'Derived_Data'
+sibfldnm    <- 'Data'
 parent      <- dirname(getwd())
 sibling     <- file.path(parent,sibfldnm)
 
@@ -156,18 +159,14 @@ fpath <- file.path(sibling, fn)
 
 Site_IC_Data <- read_csv(fpath) %>%
   filter(Site != "--") 
-#> 
+#> Rows: 7 Columns: 8
 #> -- Column specification --------------------------------------------------------
-#> cols(
-#>   Site = col_character(),
-#>   Subwatershed = col_character(),
-#>   Area_ac = col_double(),
-#>   IC_ac = col_double(),
-#>   CumArea_ac = col_double(),
-#>   CumIC_ac = col_double(),
-#>   PctIC = col_character(),
-#>   CumPctIC = col_character()
-#> )
+#> Delimiter: ","
+#> chr (4): Site, Subwatershed, PctIC, CumPctIC
+#> dbl (4): Area_ac, IC_ac, CumArea_ac, CumIC_ac
+#> 
+#> i Use `spec()` to retrieve the full column specification for this data.
+#> i Specify the column types or set `show_col_types = FALSE` to quiet this message.
 
 # Now, create a factor that preserves the order of rows (roughly upstream to downstream). 
 Site_IC_Data <- Site_IC_Data %>%
@@ -202,7 +201,6 @@ flow estimates
 fn <- "Exceeds_Data.csv"
 exceeds = read_csv(file.path(sibling, fn), progress=FALSE) %>%
   mutate(IC=Site_IC_Data$CumPctIC[match(Site, Site_IC_Data$Site)]) %>%
-  select(-X1) %>%
   filter(Year < 2019) %>%
   mutate(Site = factor(Site, levels=levels(Site_IC_Data$Site)),
          year_f = factor(Year),
@@ -214,35 +212,23 @@ exceeds = read_csv(file.path(sibling, fn), progress=FALSE) %>%
          season = factor(season, levels = c('Winter', 'Spring', 
                                            'Summer', 'Fall'))) %>%
   mutate(lPrecip = log1p(Precip))
-#> Warning: Missing column names filled in: 'X1' [1]
-#> 
+#> New names:
+#> * `` -> ...1
+#> Rows: 11422 Columns: 19
 #> -- Column specification --------------------------------------------------------
-#> cols(
-#>   X1 = col_double(),
-#>   sdate = col_date(format = ""),
-#>   Site = col_character(),
-#>   Year = col_double(),
-#>   Month = col_double(),
-#>   Precip = col_double(),
-#>   PPrecip = col_double(),
-#>   MaxT = col_double(),
-#>   D_Median = col_double(),
-#>   ClassCDO = col_logical(),
-#>   ClassBDO = col_logical(),
-#>   ClassC_PctSat = col_logical(),
-#>   ClassB_PctSat = col_logical(),
-#>   ClassCBoth = col_logical(),
-#>   ClassBBoth = col_logical(),
-#>   ChlCCC = col_logical(),
-#>   ChlCMC = col_logical(),
-#>   MaxT_ex = col_logical(),
-#>   AvgT_ex = col_logical()
-#> )
+#> Delimiter: ","
+#> chr   (1): Site
+#> dbl   (7): ...1, Year, Month, Precip, PPrecip, MaxT, D_Median
+#> lgl  (10): ClassCDO, ClassBDO, ClassC_PctSat, ClassB_PctSat, ClassCBoth, Cla...
+#> date  (1): sdate
+#> 
+#> i Use `spec()` to retrieve the full column specification for this data.
+#> i Specify the column types or set `show_col_types = FALSE` to quiet this message.
 ```
 
 ## Data Corrections
 
-### Anomolous Depth Values
+### Anomalous Depth Values
 
 Several depth observations in the record appear highly unlikely. In
 particular, several observations show daily median water depths over 15
@@ -287,7 +273,7 @@ exceeds <- exceeds %>%
                               NA, ChlCMC))
 ```
 
-### Anomolous Dissolved Oxygen and Chloride Values
+### Anomalous Dissolved Oxygen and Chloride Values
 
 #### Site S03, end of 2016
 
@@ -638,7 +624,7 @@ ggplot(s, aes(Site, prob)) +
   theme(axis.title.x = element_text(size = 10))
 ```
 
-<img src="DO_Frequencies_Trend_files/figure-gfm/do_m2_mm_graphic_by_site-1.png" style="display: block; margin: auto;" />
+<img src="DO_Frequencies_Trend_Summary_files/figure-gfm/do_m2_mm_graphic_by_site-1.png" style="display: block; margin: auto;" />
 Probabilities and 95% confidence intervals. These intervals are wider
 because we treat year to year variation as important and independent of
 other sources of uncertainty. That makes fewer contrasts between sites
@@ -650,7 +636,7 @@ oxygen, and (many of) the other sites.
 pwpp(my_ref_grid)
 ```
 
-<img src="DO_Frequencies_Trend_files/figure-gfm/unnamed-chunk-5-1.png" style="display: block; margin: auto;" />
+<img src="DO_Frequencies_Trend_Summary_files/figure-gfm/unnamed-chunk-5-1.png" style="display: block; margin: auto;" />
 
 ## By Year
 
@@ -660,7 +646,8 @@ real data. But note the wide overlap of confidence intervals. Although
 the trend is significant, predictions year to year overlap.
 
 ``` r
-my_ref_grid <- ref_grid(do_gamm_two_trend_2, cov.keep = 'Year', cov.reduce = median) 
+my_ref_grid <- ref_grid(do_gamm_two_trend_2, cov.keep = 'Year', 
+                        cov.reduce = median) 
 (b <- emmeans(my_ref_grid, ~ Year, type = 'response'))
 #>  Year  prob     SE   df lower.CL upper.CL
 #>  2010 0.950 0.0338 2177    0.825    0.987
@@ -695,7 +682,7 @@ ggplot(s, aes(Year, prob)) +
   theme_cbep(base_size = 12)
 ```
 
-<img src="DO_Frequencies_Trend_files/figure-gfm/do_mm_graphic_by_years-1.png" style="display: block; margin: auto;" />
+<img src="DO_Frequencies_Trend_Summary_files/figure-gfm/do_mm_graphic_by_years-1.png" style="display: block; margin: auto;" />
 
 Those confidence intervals reflect the mathematics of the GLM. Errors
 are wider with $p $, and asymmetric near the limits *p* = 1.0 or
