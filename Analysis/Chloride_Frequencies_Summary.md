@@ -40,6 +40,7 @@ Curtis C. Bohlen, Casco Bay Estuary Partnership
         -   [Model 4: Site Only](#model-4-site-only)
         -   [Model 5: Month Only](#model-5-month-only)
 -   [Examine Full Model](#examine-full-model)
+-   [Is there a long term trend?](#is-there-a-long-term-trend)
 -   [Extract Marginal Means](#extract-marginal-means)
     -   [Add Calls to GAM objects](#add-calls-to-gam-objects)
     -   [By Site](#by-site)
@@ -793,10 +794,31 @@ plot(ccc_gamm_1$gam)
 ```
 
 <img src="Chloride_Frequencies_Summary_files/figure-gfm/plot_gamm_1-1.png" style="display: block; margin: auto;" />
-\# Is there a long term trend? Model three included a linear year term
-and treated years as a random factor, thus effectively testing to see if
-there is a long term trend in probability of meeting chloride standards
-if we pool results by year.
+
+``` r
+gam.check(ccc_gamm_1$gam)
+```
+
+<img src="Chloride_Frequencies_Summary_files/figure-gfm/unnamed-chunk-3-1.png" style="display: block; margin: auto;" />
+
+    #> 
+    #> 'gamm' based fit - care required with interpretation.
+    #> Checks based on working residuals may be misleading.
+    #> Basis dimension (k) checking results. Low p-value (k-index<1) may
+    #> indicate that k is too low, especially if edf is close to k'.
+    #> 
+    #>                k'  edf k-index p-value
+    #> s(FlowIndex) 9.00 6.78    0.98    0.28
+
+So, model diagnostics are not obviously dreadful. (They should be
+interpreted carefully with GAMM models, as the deviance residuals can be
+misleading).
+
+# Is there a long term trend?
+
+Model three included a linear year term and treated years as a random
+factor, thus effectively testing to see if there is a long term trend in
+probability of meeting chloride standards if we pool results by year.
 
 ``` r
 anova(ccc_gamm_3$gam)
@@ -1129,7 +1151,7 @@ plt1 +
 #> Warning: Removed 1067 rows containing non-finite values (stat_summary).
 ```
 
-<img src="Chloride_Frequencies_Summary_files/figure-gfm/unnamed-chunk-6-1.png" style="display: block; margin: auto;" />
+<img src="Chloride_Frequencies_Summary_files/figure-gfm/unnamed-chunk-7-1.png" style="display: block; margin: auto;" />
 
 #### Model 2
 
@@ -1170,7 +1192,7 @@ plt2 +
 #> Warning: Removed 1067 rows containing non-finite values (stat_summary).
 ```
 
-<img src="Chloride_Frequencies_Summary_files/figure-gfm/unnamed-chunk-8-1.png" style="display: block; margin: auto;" />
+<img src="Chloride_Frequencies_Summary_files/figure-gfm/unnamed-chunk-9-1.png" style="display: block; margin: auto;" />
 
 ## By Month
 
@@ -1227,7 +1249,7 @@ z %>%
 #> Warning: Removed 2 rows containing missing values (geom_segment).
 ```
 
-<img src="Chloride_Frequencies_Summary_files/figure-gfm/unnamed-chunk-11-1.png" style="display: block; margin: auto;" />
+<img src="Chloride_Frequencies_Summary_files/figure-gfm/unnamed-chunk-12-1.png" style="display: block; margin: auto;" />
 There is a lot of scatter here. The pattern is revealing. Our “flow
 adjusted” monthly values are lower in winter and higher in summer than
 the observed values, while the simpler model without a flow term fits
@@ -1293,4 +1315,4 @@ plt1 +
 #> Warning: Removed 1067 rows containing non-finite values (stat_summary).
 ```
 
-<img src="Chloride_Frequencies_Summary_files/figure-gfm/unnamed-chunk-14-1.png" style="display: block; margin: auto;" />
+<img src="Chloride_Frequencies_Summary_files/figure-gfm/unnamed-chunk-15-1.png" style="display: block; margin: auto;" />

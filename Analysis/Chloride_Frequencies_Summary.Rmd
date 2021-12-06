@@ -528,6 +528,14 @@ important detail.
 ```{r plot_gamm_1}
 plot(ccc_gamm_1$gam)
 ```
+
+```{r}
+gam.check(ccc_gamm_1$gam)
+```
+
+So, model diagnostics are not obviously dreadful. (They should be interpreted 
+carefully with GAMM models, as the deviance residuals can be misleading).
+
 # Is there a long term trend?
 Model three included a linear year term and treated years as a random factor, 
 thus effectively testing to see if there is a long term trend in probability of 
