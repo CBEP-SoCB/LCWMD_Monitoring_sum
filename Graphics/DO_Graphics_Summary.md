@@ -25,7 +25,7 @@ Curtis C. Bohlen, Casco Bay Estuary Partnership.
 -   [Initial GAMM Model](#initial-gamm-model)
     -   [Visualizing Estimated Marginal
         Means](#visualizing-estimated-marginal-means)
--   [Graphic Alternatives](#graphic-alternatives)
+-   [Graphics](#graphics)
     -   [Calculate Observed
         Frequencies](#calculate-observed-frequencies)
     -   [By Site](#by-site)
@@ -58,9 +58,9 @@ communication to State of Casco Bay audiences.
 
 We use a model of the form:
 
-*O**x**y**g**e**n* = *f*(*C**o**v**a**r**i**a**t**e**s*) + *g*(*P**r**e**d**i**c**t**o**r**s*) + *E**r**r**o**r*
+Oxygen = *f*(Covariates) + *g*(Predictors) + Error
 
-Where: \* Site-independent stream flow,a nd site-specific water
+Where: \* Site-independent stream flow, and site-specific water
 temperature covariates enter into the model either via linear functions
 or spline smoothers. Predictors include: – natural log of the depth of
 water (in meters) at Site S05, in mid-watershed, and – the local daily
@@ -195,16 +195,15 @@ fpath <- file.path(sibling, fn)
 full_data <- read_csv(fpath, 
     col_types = cols(DOY = col_integer(), 
         D_Median = col_double(), Precip = col_number(), 
-        X1 = col_skip(), Year = col_integer(), 
-        FlowIndex = col_double())) %>%
+        ...1 = col_skip(), Year = col_integer())) %>%
 
   mutate(Site = factor(Site, levels=levels(Site_IC_Data$Site))) %>%
   mutate(Month = factor(Month, levels = month.abb)) %>%
-  mutate(IC=as.numeric(Site_IC_Data$CumPctIC[match(Site, Site_IC_Data$Site)])) %>%
+  mutate(IC=as.numeric(Site_IC_Data$CumPctIC[match(Site, 
+                                                   Site_IC_Data$Site)])) %>%
   mutate(Year_f = factor(Year))
 #> New names:
 #> * `` -> ...1
-#> Warning: The following named parsers don't match the column names: X1, FlowIndex
 ```
 
 ### Cleanup
@@ -259,7 +258,7 @@ full_data %>%
 #> Warning: Removed 163 rows containing missing values (geom_point).
 ```
 
-<img src="DO_Graphics_files/figure-gfm/Show_bad_datum-1.png" style="display: block; margin: auto;" />
+<img src="DO_Graphics_Summary_files/figure-gfm/Show_bad_datum-1.png" style="display: block; margin: auto;" />
 
 We remove the Chloride value from the data.
 
@@ -344,21 +343,6 @@ data from S05 to construct our general stream flow indicator.
 Stream flow at S05 is correlated with flow at other sites, although not
 all that closely correlated to flow in the downstream tributaries.
 
-``` r
-full_data %>%
-  select(sdate, Site, lD_Median) %>%
-  pivot_wider(names_from = Site, values_from = lD_Median) %>%
-  select( -sdate) %>%
-  cor(use = 'pairwise', method = 'pearson')
-#>            S07      S06B       S05       S17       S03       S01
-#> S07  1.0000000 0.5882527 0.7042711 0.7327432 0.4578906 0.5594067
-#> S06B 0.5882527 1.0000000 0.8043943 0.8778188 0.7152403 0.6310361
-#> S05  0.7042711 0.8043943 1.0000000 0.7906571 0.4526392 0.6506630
-#> S17  0.7327432 0.8778188 0.7906571 1.0000000 0.6666414 0.7290077
-#> S03  0.4578906 0.7152403 0.4526392 0.6666414 1.0000000 0.4499047
-#> S01  0.5594067 0.6310361 0.6506630 0.7290077 0.4499047 1.0000000
-```
-
 We use the log of the daily median flow at S05 as a general
 watershed-wide stream flow indicator, which we call `FlowIndex`. We use
 the log of the raw median, to lessen the effect of the highly skewed
@@ -406,7 +390,7 @@ if (! file.exists("models/do_gamm.rds")) {
 
 Reliably calling `emmeans()` for `gamm()` models requires creating a
 call object and associating it with the model as `do_gamm$gam$call`.
-(See the `emmeans` “models” vignette for more info. We (re)create the
+(See the `emmeans` “models” vignette for more info.) We (re)create the
 call object, associate it with the model, manually construct a reference
 grid before finally calling `emmeans()` to extract marginal means.
 
@@ -419,8 +403,8 @@ relevant.
 
 It is worth pointing out that marginal means may not be the most useful
 way to summarize these models, as our interest lies in extremes, which
-occur during high temperature or low flow events, at our shallowwater
-sites. Teh marginal means blend across those categories.
+occur during high temperature or low flow events, especially at our
+shallow water sites.
 
 ``` r
 the_call <-  quote(gamm(DO_Median ~ Site + 
@@ -436,7 +420,7 @@ do_gamm$gam$call <- the_call
 my_ref_grid <- ref_grid(do_gamm, cov.reduce = median, cov.keep = 'Month')
 ```
 
-# Graphic Alternatives
+# Graphics
 
 ## Calculate Observed Frequencies
 
@@ -501,7 +485,7 @@ plt1 +
 #> Warning: Removed 3293 rows containing non-finite values (stat_boxplot).
 ```
 
-<img src="DO_Graphics_files/figure-gfm/site_violins_boxes_annot-1.png" style="display: block; margin: auto;" />
+<img src="DO_Graphics_Summary_files/figure-gfm/site_violins_boxes_annot-1.png" style="display: block; margin: auto;" />
 
 ``` r
 ggsave('figures/do_Site_violin_w_bo_annot.pdf', device = cairo_pdf, width = 5, height = 4)
@@ -558,7 +542,7 @@ plt2 +
 #> Warning: Removed 3293 rows containing non-finite values (stat_boxplot).
 ```
 
-<img src="DO_Graphics_files/figure-gfm/do_months_box_annot-1.png" style="display: block; margin: auto;" />
+<img src="DO_Graphics_Summary_files/figure-gfm/do_months_box_annot-1.png" style="display: block; margin: auto;" />
 
 ``` r
 ggsave('figures/do_month_violin_w_box_annot.pdf', device = cairo_pdf,
@@ -621,7 +605,7 @@ plt3 +
 #> Warning: Removed 3293 rows containing non-finite values (stat_boxplot).
 ```
 
-<img src="DO_Graphics_files/figure-gfm/do_year_box_annot-1.png" style="display: block; margin: auto;" />
+<img src="DO_Graphics_Summary_files/figure-gfm/do_year_box_annot-1.png" style="display: block; margin: auto;" />
 
 ``` r
 ggsave('figures/do_year_violin_w_box_annot.pdf', device = cairo_pdf, width = 5, height = 4)

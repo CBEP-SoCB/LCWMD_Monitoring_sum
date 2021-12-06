@@ -128,12 +128,12 @@ fpath <- file.path(sibling, fn)
 full_data <- read_csv(fpath, 
     col_types = cols(DOY = col_integer(), 
         D_Median = col_double(), Precip = col_number(), 
-        X1 = col_skip(), Year = col_integer(), 
-        FlowIndex = col_double())) %>%
+        ...1 = col_skip(), Year = col_integer())) %>%
 
   mutate(Site = factor(Site, levels=levels(Site_IC_Data$Site))) %>%
   mutate(Month = factor(Month, levels = month.abb)) %>%
-  mutate(IC=as.numeric(Site_IC_Data$CumPctIC[match(Site, Site_IC_Data$Site)])) %>%
+  mutate(IC=as.numeric(Site_IC_Data$CumPctIC[match(Site, 
+                                                   Site_IC_Data$Site)])) %>%
   mutate(Year_f = factor(Year))
 ```
 
@@ -245,15 +245,6 @@ our general stream flow indicator.
 Stream flow at S05 is correlated with flow at other sites, although not all that
 closely correlated to flow in the downstream tributaries.
 
-```{r}
-full_data %>%
-  select(sdate, Site, lD_Median) %>%
-  pivot_wider(names_from = Site, values_from = lD_Median) %>%
-  select( -sdate) %>%
-  cor(use = 'pairwise', method = 'pearson')
-
-```
-
 We use the log of the daily median flow at S05 as a general watershed-wide
 stream flow indicator, which we call `FlowIndex`.  We use the log of the raw
 median, to lessen the effect of the highly skewed distribution of stream depths
@@ -295,11 +286,10 @@ if (! file.exists("models/do_gamm.rds")) {
 }
 ```
 
-
 ## Visualizing Estimated Marginal Means
 Reliably calling `emmeans()` for `gamm()` models requires creating a call object 
 and associating it with the model as `do_gamm$gam$call`. (See the `emmeans` 
-"models" vignette for more info. We (re)create the call object, associate it 
+"models" vignette for more info.) We (re)create the call object, associate it 
 with the model, manually construct a  reference grid before finally calling 
 `emmeans()` to extract marginal means.
 
@@ -311,8 +301,7 @@ for the covariates, making the estimates marginal means more relevant.
 
 It is worth pointing out that marginal means may not be the most useful way 
 to summarize these models, as our interest lies in extremes, which occur during
-high temperature or low flow events, at our shallowwater sites.  Teh marginal 
-means blend across those categories.
+high temperature or low flow events, especially at our shallow water sites.
 
 ```{r create_call_objects}
 the_call <-  quote(gamm(DO_Median ~ Site + 
@@ -328,7 +317,7 @@ do_gamm$gam$call <- the_call
 my_ref_grid <- ref_grid(do_gamm, cov.reduce = median, cov.keep = 'Month')
 ```
 
-# Graphic Alternatives
+# Graphics
 ## Calculate Observed Frequencies
 ```{r}
 my_means <- full_data %>%
