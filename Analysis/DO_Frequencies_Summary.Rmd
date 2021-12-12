@@ -23,7 +23,7 @@ The Long Creek Watershed, almost three and a half square miles in area, is
 dominated by commercial land use. The Maine Mall is one of the largest land
 owners in the watershed, and it is surrounded by a range of commercial
 businesses, from medical offices, to car washes.  About a third of the watershed
-in impervious surfaces like roads, parking lots, and rooftops.
+is impervious surfaces like roads, parking lots, and rooftops.
 
 Landowners with an acre or more of impervious area are required to get a Clean
 Water Act permit for stormwater discharges from their property.  The LCWMD
@@ -143,7 +143,8 @@ We remove 2019 data, as we don't have a complete year's worth of data, which may
 bias annual summaries.
 
 Note that this data does NOT include all of the predictors used in some models
-looking at chlorides. In particular, it does not include stream flow estimates 
+looking at chlorides. In particular, it does not include stream flow estimates. 
+
 ```{r main_data}
 fn <- "Exceeds_Data.csv"
 exceeds = read_csv(file.path(sibling, fn), progress=FALSE) %>%
@@ -178,6 +179,7 @@ instability of the pressure sensors, it might make sense to remove them all.
 
 Note that removing depth observations from Site S05  will remove those DATES
 from any model that uses the `FlowIndex` variable (see below) as a predictor.
+
 ```{r correct_depth_data}
 exceeds <- exceeds %>%
   mutate(D_Median = if_else(D_Median > 4, NA_real_, D_Median),
@@ -191,6 +193,7 @@ or not, it has  high leverage in several models, and we suspect a
 transcription error of some sort.
 
 We remove the Chloride value from the data.
+
 ```{r correct_chloride_data}
 exceeds <- exceeds %>%
   mutate(ChlCCC = if_else(Site == 'S06B' & Year > 2014,
@@ -205,7 +208,7 @@ exceeds <- exceeds %>%
 We noted  extreme dissolved oxygen data at the end of 2016.  Values were
 both extreme and highly variable.  (See discussion in the DO Analysis workbooks).
 
-We decide we should remove chloride and oxygen observations after October 15th.
+We decided we should remove chloride and oxygen observations after October 15th.
 
 ```{r correct_S03_October_2016_data}
 exceeds <- exceeds %>% 
@@ -267,6 +270,7 @@ our general stream flow indicator.
 
 Stream flow at S05 is correlated with flow at other sites, although not all that
 closely correlated to flow in the downstream tributaries (S01 and S03).
+
 ```{r depth_correlations}
 exceeds %>%
   select(sdate, Site, lD_Median) %>%
@@ -294,8 +298,9 @@ rm(depth_data)
 ## Create July and August Data Only
 Because low dissolved oxygen conditions are essentially absent from the cool and
 cold weather months, we can not fit binomial or Poisson GLM models readily to
-data that includes all months (due to the Hauck-Donner effect).  WE create a 
+data that includes all months (due to the Hauck-Donner effect).  We create a 
 smaller data set that contains only July and August data.
+
 ```{r filter_July_August}
 exceeds_two <- exceeds %>%
   filter(Month  > 6 & Month < 9)
@@ -327,6 +332,7 @@ xt_pct(~Year + ClassC_PctSat, exceeds)
 
 The two oxygen-related exceedances are correlated.  In particular, no samples
 met the Percent Saturation standard, but failed the dissolved oxygen standard.
+
 ```{r both_xtab}
 xtabs(~ ClassCDO + ClassC_PctSat, data = exceeds)
 ```
@@ -335,6 +341,7 @@ xtabs(~ ClassCDO + ClassC_PctSat, data = exceeds)
 ## Exploratory Graphics
 These are estimated as empirical relative frequencies, with error estimated 
 as two times the standard error of the estimate. 
+
 ```{r do_site_empirical_p}
 exceeds %>%
   group_by(Site, Year) %>%
@@ -348,6 +355,7 @@ exceeds %>%
   geom_pointrange(aes(ymin = do_p-2 * do_err, ymax = do_p + 2 * do_err)) +
   ylab('Probability of Passing DO Standard')
 ```
+
 2016 was a rough year at most sites.
 
 Note that for some year/ site combination, we never had a failure to meet DO 
@@ -364,6 +372,7 @@ exceeds  %>%
   geom_line() +
   geom_pointrange(aes(ymin = do_p-2 * do_err, ymax = do_p + 2 * do_err))
 ```
+
  That shows that 2016 was a tough year in June, July, August, and September,
  while June and July were tough in 2018.  This highlights the role of drought 
  in shaping conditions in Long Creek regarding dissolved oxygen.
@@ -375,7 +384,9 @@ without reaching convergence. Other models ran into other kinds of estimability
 problems for some key predictors, so we ended up with a relatively simple
 model:
 
-A model that omits the flow index term converges rapidly (~ 5 min, 7 iterations). 
+A model that omits the flow index term converges rapidly (~ 5 min, 7 
+iterations). 
+
 ```{r do_gamm_2, cache = TRUE}
 if (! file.exists("models/do_gamm_two_2.rds")) {
   system.time(
@@ -397,6 +408,7 @@ summary(do_gamm_two_2$gam)
 ```
 
 `gam.check()` is only marginally useful for a binomial GAM, but we look anyway.
+
 ```{r}
 gam.check(do_gamm_two_2$gam)
 ```
@@ -441,7 +453,6 @@ ggplot(s, aes(Site, fprob)) +
 ```{r do_mm_by_years}
 my_ref_grid <- ref_grid(do_gamm_two_2,  cov.reduce = median) 
 (b <- emmeans(my_ref_grid, ~ year_f, type = 'response'))
-
 ```
 
 ##### Graphics
@@ -468,6 +479,7 @@ ggplot(aes(as.numeric(year_f) + 2009, fprob)) +
 ## Exploratory Graphics
 These are estimated as empirical relative frequencies, with error estimated 
 as two times the standard error of the estimate. 
+
 ```{r ps_site_empirical_p}
 exceeds %>%
   group_by(Site, Year) %>%
@@ -484,6 +496,7 @@ exceeds %>%
 
 Note that for some year/ site combination, we never had a failure to meet 
 standards.  This limits models we can fit, as it did for DO.
+
 ```{r ps_month_empirical_p}
 exceeds  %>%
   group_by(month_f, Year) %>%
@@ -499,6 +512,7 @@ exceeds  %>%
 ## GAMM with Autocorrelated Error
 We follow the format of the DO model just developed. This model takes ~ 15 
 minutes to fit and converges in 6 iterations.
+
 ```{r ps_gamm_2, cache = TRUE}
 if (! file.exists("models/psat_gamm_two_2.rds")) {
   system.time(
@@ -570,4 +584,3 @@ ggplot(s, aes(Site, fprob)) +
   theme_cbep(base_size = 12) +
   theme(axis.title.x = element_text(size = 10))
 ```
-

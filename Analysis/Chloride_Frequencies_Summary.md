@@ -1,4 +1,4 @@
-Analysis of LCWMD “Diurnal Exceedences” of Chronic (“CCC”) Chloride
+Analysis of LCWMD “Diurnal ExceedAnces” of Chronic (“CCC”) Chloride
 Standards
 ================
 Curtis C. Bohlen, Casco Bay Estuary Partnership
@@ -60,7 +60,7 @@ The Long Creek Watershed, almost three and a half square miles in area,
 is dominated by commercial land use. The Maine Mall is one of the
 largest landowners in the watershed, and it is surrounded by a range of
 commercial businesses, from medical offices, to car washes. About a
-third of the watershed in impervious surfaces like roads, parking lots,
+third of the watershed is impervious surfaces like roads, parking lots,
 and rooftops.
 
 Landowners with an acre or more of impervious area are required to get a
@@ -529,6 +529,7 @@ exceeds %>%
 ```
 
 <img src="Chloride_Frequencies_Summary_files/figure-gfm/Site_exploratory_graphic-1.png" style="display: block; margin: auto;" />
+
 2016 was a rough year at most sites. Sites S01 and S03 fail this
 standard frequently.
 
@@ -550,6 +551,7 @@ exceeds  %>%
 ```
 
 <img src="Chloride_Frequencies_Summary_files/figure-gfm/month_exploritory_graphic-1.png" style="display: block; margin: auto;" />
+
 That shows that 2011 and 2016 were fairly bad years. But the month to
 month patterns are less obvious than the year to year patterns This
 highlights the role of relativity slow-dynamic processes (drought?
@@ -808,7 +810,7 @@ gam.check(ccc_gamm_1$gam)
     #> indicate that k is too low, especially if edf is close to k'.
     #> 
     #>                k'  edf k-index p-value
-    #> s(FlowIndex) 9.00 6.78    0.98    0.28
+    #> s(FlowIndex) 9.00 6.78    0.98     0.4
 
 So, model diagnostics are not obviously dreadful. (They should be
 interpreted carefully with GAMM models, as the deviance residuals can be
@@ -946,6 +948,7 @@ z %>%
 ```
 
 <img src="Chloride_Frequencies_Summary_files/figure-gfm/compare_models_by_site_1-1.png" style="display: block; margin: auto;" />
+
 So all the models do pretty good job predicting the observed values,
 except at site S17, where predictions are consistently higher than what
 we observed, presumably because the record for S17 is short, including
@@ -1096,6 +1099,7 @@ z %>%
 ```
 
 <img src="Chloride_Frequencies_Summary_files/figure-gfm/create_plotting_df-1.png" style="display: block; margin: auto;" />
+
 Here our marginal means do not show up so well. The model predictions
 are highly correlated, but neither model does very well reproducing
 observed frequencies, at least for 2010 and 2012. 2010 is a year with no
@@ -1250,6 +1254,7 @@ z %>%
 ```
 
 <img src="Chloride_Frequencies_Summary_files/figure-gfm/unnamed-chunk-12-1.png" style="display: block; margin: auto;" />
+
 There is a lot of scatter here. The pattern is revealing. Our “flow
 adjusted” monthly values are lower in winter and higher in summer than
 the observed values, while the simpler model without a flow term fits

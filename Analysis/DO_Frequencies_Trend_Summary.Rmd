@@ -117,7 +117,8 @@ We remove 2019 data, as we don't have a complete year's worth of data, which may
 bias annual summaries.
 
 Note that this data does NOT include all of the predictors used in some models
-looking at chlorides. In particular, it does not include stream flow estimates 
+looking at chlorides. In particular, it does not include stream flow estimates.
+
 ```{r main_data}
 fn <- "Exceeds_Data.csv"
 exceeds = read_csv(file.path(sibling, fn), progress=FALSE) %>%
@@ -152,6 +153,7 @@ instability of the pressure sensors, it might make sense to remove them all.
 
 Note that removing depth observations from Site S05  will remove those DATES
 from any model that uses the `FlowIndex` variable (see below) as a predictor.
+
 ```{r correct_depth_data}
 exceeds <- exceeds %>%
   mutate(D_Median = if_else(D_Median > 4, NA_real_, D_Median),
@@ -165,6 +167,7 @@ or not, it has  high leverage in several models, and we suspect a
 transcription error of some sort.
 
 We remove the Chloride value from the data.
+
 ```{r correct_chloride_data}
 exceeds <- exceeds %>%
   mutate(ChlCCC = if_else(Site == 'S06B' & Year > 2014,
@@ -172,7 +175,6 @@ exceeds <- exceeds %>%
          ChlCMC = if_else(Site == 'S06B' & Year > 2014,
                               NA, ChlCMC))
 ```
-
 
 ### Anomalous Dissolved Oxygen and Chloride Values
 #### Site S03, end of 2016
@@ -240,6 +242,7 @@ our general stream flow indicator.
 
 Stream flow at S05 is correlated with flow at other sites, although not all that
 closely correlated to flow in the downstream tributaries (S01 and S03).
+
 ```{r depth_correlations}
 exceeds %>%
   select(sdate, Site, lD_Median) %>%
@@ -248,6 +251,7 @@ exceeds %>%
   cor(use = 'pairwise', method = 'pearson')
 
 ```
+
 We use the log of the daily median flow at S05 as a general watershed-wide
 stream flow indicator, which we call `FlowIndex`.  We use the log of the raw
 median, to lessen the effect of the highly skewed distribution of stream depths
@@ -291,7 +295,8 @@ interaction terms achieve statistical significance.
 ## Model 2:  Both Linear and Random Year Terms, No Interaction
 we add a random term for the years.  This is problematic, since we are also fitting year by
 year model coefficients, so any trend will be parceled out between the linear
-term and a residual
+term and a residual.
+
 ```{r do_gamm_trend_2, cache = TRUE}
 do_gamm_two_trend_2<- gamm(ClassCDO ~ Site + Year + MaxT + 
                              s(lPrecip), random = list(year_f = ~ 1),
@@ -309,6 +314,7 @@ significant.
 
 ## Model 3:  Both Linear and Random Terms Without Temperature
 Finally, we fit a model without the temperature term.
+
 ```{r do_gamm_trend_3, cache = TRUE}
 do_gamm_two_trend_3<- gamm(ClassCDO ~ Site +Year + 
                              s(lPrecip), random = list(year_f = ~ 1),
@@ -374,12 +380,14 @@ ggplot(s, aes(Site, prob)) +
   theme_cbep(base_size = 12) +
   theme(axis.title.x = element_text(size = 10))
 ```
+
 Probabilities and 95% confidence intervals.  These intervals are wider because
 we treat year to year variation as important and independent of other sources
 of uncertainty.  That makes fewer contrasts between sites statistically robust.
 Basically, the only meaningful differences are between the downstream
 tributaries, with low risk of low dissolved oxygen, and (many of) the other 
 sites.
+
 ```{r}
 pwpp(my_ref_grid)
 ```
@@ -389,6 +397,7 @@ Since this prediction is capturing a simple linear term in the underlying GAM,
 it is not very informative without overlaying it over real data.  But note the
 wide overlap of confidence intervals. Although the trend is significant,
 predictions year to year overlap.
+
 ```{r do_mm_by_years}
 my_ref_grid <- ref_grid(do_gamm_two_trend_2, cov.keep = 'Year', 
                         cov.reduce = median) 

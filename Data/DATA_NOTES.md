@@ -9,7 +9,7 @@
 
 1.  **Sonde_Data.csv**
 
-A large CSV file, Containing data collected principally by sondes.  Data was 
+A large CSV file, containing data collected principally by sondes.  Data was 
 collected every 15 minutes or 1 hour, depending on the deployment.
 
 Column Name | Contents                   | Units / Values
@@ -29,14 +29,13 @@ Site        | Monitoring Location Code   |
 ------------|----------------------------|--------------
 
 Precipitation data is derived from daily published rainfall totals for the 
-Portland jetport, and thus are just daily values repeated.
+Portland jetport, and are daily total values.
 
-Chloride values were calculated from specific conductance based on a multi-year 
-specific conductance-chloride linear regression. R^2 values are on the 
-order of  0.9.  Detailed statistical analysis shows that the relationship is not 
-strictly linear, but deviations from linearity have little practical import.  
-The presence of outliers also suggests some care in interpreting 
-individual extreme values. 
+Chloride values were calculated from specific conductance based on a multi-year
+specific conductance-chloride linear regression. R^2^ values are on the order of
+0.9.  Detailed statistical analysis shows that the relationship is not strictly
+linear, but deviations from linearity have little practical import. The presence
+of outliers also suggests some care in interpreting individual extreme values.
 
 2.  **Site_IC_Data.csv** --  Simplified data of
     direct and cumulative subwatershed area and imperviousness for each Long
@@ -77,7 +76,7 @@ sdate       | Date                       | '%m/%d/%Y'
 Year        | Year, as an integer        |  
 Month       | As an integer 1 = January  |
 DOY         | Julian Day                 | 1:366
-Precip      | Daily precipitation        | tmm  
+Precip      | Daily precipitation        | mm  
 MaxT        | Daily maximum air temperature | Degrees C
 lPrecip     | natural log of Precip      |
 wPrecip	    | Weighted value of prior 10 days precipitation  | mm
@@ -85,7 +84,7 @@ wlPrecip    | Weighted values of log of prior 10 days precipitation |
 ------------|----------------------------|--------------  
 
 The NOAA API provides rainfall in tenths of millimeters.  We converted to 
-millimeters to reduce confusion.
+millimeters in this file.
 
 Weighted precipitation values use exponential weighting, with a rate parameter
 of $0.8$.  Thus yesterday's precipitation counts as $80%$ of today's rainfall,
@@ -113,7 +112,7 @@ MaxT        | Daily maximum air temp.    | tenths of degree C
 ------------|----------------------------|--------------  
 
 We replaced the precipitation data from the `sonde_data.csv` file with
-newly downloaded weather data. We added daily maximum temperature data from that 
+newly downloaded weather data. We added daily maximum temperature data from the 
 same source.  Both are in tenths of their customary units.
 
 5.  **Exceeds_Data.csv**  -- Data derived from *Daily_Data.csv* containing flags
@@ -182,7 +181,7 @@ Note that the depth data (`D_Median`) is unique to each monitoring station, as
 it depends on local stream morphology and flow dynamics.
 
 
-6.  **Full_Data.csv** -- Data derived from *Daily_data.csv* containing lags and
+6.  **Full_Data.csv** -- Data derived from *Daily_data.csv* containing
     weighted sums for time series analysis.  The data contains missing values
     where there are gaps in the data, so that autocorrelation-based regression
     models rely only on data where lag data are available.
@@ -208,7 +207,6 @@ PctSat_Median | Median daily saturation  | percent
 pH_Median	  | Median daily pH            |  
 spCond_Median | median daily specific conductance | uS/cm 
 T_Median    | Median daily water temperature | Degrees C
-
  
 7.  **grab_data** a folder containing several csv files.  Files contain subsets
     by subject area of data derived from the original excel data sheets. Data

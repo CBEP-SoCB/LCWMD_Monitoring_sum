@@ -4,14 +4,13 @@
     src="https://www.cascobayestuary.org/wp-content/uploads/2014/04/logo_sm.jpg"
     style="position:absolute;top:10px;right:50px;" />
 
-
 Analysis of ten years of water quality monitoring data from the Long Creek
 Watershed Management District in Maine.
 
 # Introduction
 This archive includes R scripts and related products analyzing approximately ten
 years of water quality monitoring data from the Long Creek Watershed Management
-District (LCWMD).The District is a Maine quasi-municipal non-profit corporation
+District (LCWMD). The District is a Maine quasi-municipal non-profit corporation
 that manages water quality in the Long Creek watershed on behalf of about 130
 land owners.
 
@@ -32,7 +31,7 @@ access to their property for certain activities.
 For more information on LCWMD, see [their web site](https://restorelongcreek.org).
 
 Over the past decade, LCWMD has contracted with several consulting firms to
-provide  water quality monitoring services along Long Creek.  This has produced
+provide  water quality monitoring services along Long Creek. This has produced
 one of the most extensive and best documented data set from the Northeastern US 
 looking at water quality conditions in an urban stream.
 
@@ -125,5 +124,3 @@ another stressor correlated with these temperature metrics.
    of Thermal Tolerance Limits for Trout: Incorporating Exposure Time and
    Temperature Fluctuation.” Transactions of the American Fisheries Society
    136(2):365-374.
-
-

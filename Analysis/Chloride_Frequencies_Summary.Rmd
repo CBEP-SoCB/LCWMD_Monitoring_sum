@@ -1,5 +1,5 @@
 ---
-title: 'Analysis of LCWMD "Diurnal Exceedences" of Chronic ("CCC") Chloride Standards'
+title: 'Analysis of LCWMD "Diurnal ExceedAnces" of Chronic ("CCC") Chloride Standards'
 author: "Curtis C. Bohlen, Casco Bay Estuary Partnership"
 date: "01/12/2021"
 output:
@@ -23,7 +23,7 @@ The Long Creek Watershed, almost three and a half square miles in area, is
 dominated by commercial land use. The Maine Mall is one of the largest 
 landowners in the watershed, and it is surrounded by a range of commercial
 businesses, from medical offices, to car washes.  About a third of the watershed
-in impervious surfaces like roads, parking lots, and rooftops.
+is impervious surfaces like roads, parking lots, and rooftops.
 
 Landowners with an acre or more of impervious area are required to get a Clean
 Water Act permit for stormwater discharges from their property.  The LCWMD
@@ -149,6 +149,7 @@ which may bias annual summaries.
 
 Note that this data does *not* include all of the predictors used in some models
 looking at chlorides. In particular, it does not include stream flow estimates. 
+
 ```{r main_data}
 fn <- "Exceeds_Data.csv"
 exceeds = read_csv(file.path(sibling, fn), progress=FALSE) %>%
@@ -183,6 +184,7 @@ instability of the pressure sensors, it might make sense to remove them all.
 
 Note that removing depth observations from Site S05  will remove those dates
 from any model that uses the `FlowIndex` variable (see below) as a predictor.
+
 ```{r correct_depth_data}
 exceeds <- exceeds %>%
   mutate(D_Median = if_else(D_Median > 4, NA_real_, D_Median),
@@ -242,7 +244,6 @@ exceeds <- exceeds %>%
   filter(Month >= 3 & Month <= 11)
 ```
 
-
 ## Add Stream Flow Index
 We worked through many models on a site by site basis in which we included data
 on water depth, but since the depth coordinate is site-specific, a 10 cm depth
@@ -258,6 +259,7 @@ our general stream flow indicator.
 
 Stream flow at S05 is correlated with flow at other sites, although not all that
 closely correlated to flow in the downstream tributaries (S01 and S03).
+
 ```{r flow_correlations}
 exceeds %>%
   select(sdate, Site, lD_Median) %>%
@@ -265,6 +267,7 @@ exceeds %>%
   select( -sdate) %>%
   cor(use = 'pairwise', method = 'pearson')
 ```
+
 We use the log of the daily median flow at S05 as a general watershed-wide
 stream flow indicator, which we call `FlowIndex`.  We use the log of the raw
 median, to lessen the effect of the highly skewed distribution of stream depths
@@ -294,7 +297,6 @@ exceeds <- exceeds %>%
   mutate(Site = droplevels(Site))
 ```
 
-
 # Exploratory Cross Tabs
 ## Utility Function
 This function just adds a percent summary column to a cross-tab.
@@ -311,7 +313,9 @@ xt_pct <- function(.form, .dat) {
 ```{r year_ccc_xtAB}
 xt_pct(~Year + ChlCCC, exceeds)
 ```
+
 But the Strong pattern is by sites.
+
 ```{r site_ccc_xtab}
 xt_pct(~Site + ChlCCC, exceeds)
 ```
@@ -324,6 +328,7 @@ xt_pct(~Year + ChlCMC, exceeds)
 ```{r site_cmc_xtab}
 xt_pct(~Site + ChlCMC, exceeds)
 ```
+
 Note that those probabilities are very low -- under 1% -- which is likely to 
 limit ability to fit models to these data.
 
@@ -343,6 +348,7 @@ exceeds %>%
   geom_pointrange(aes(ymin = CCC_p-2 * CCC_err, ymax = CCC_p + 2 * CCC_err)) +
   ylab('Probability of Passing\nChloride CCC Standard')
 ```
+
 2016 was a rough year at most sites.  Sites S01 and S03 fail this standard
 frequently.
 
@@ -360,6 +366,7 @@ exceeds  %>%
   geom_line() +
   geom_pointrange(aes(ymin = CCC_p-2 * CCC_err, ymax = CCC_p + 2 * CCC_err))
 ```
+
 That shows that 2011 and 2016 were fairly bad years.  But the month to month
 patterns are less obvious than the year to year patterns  This highlights the 
 role of relativity slow-dynamic processes (drought? groundwater flow?) in 
@@ -382,6 +389,7 @@ Although R `Date` objects are integers under the hood, limiting possible values
 to a smaller range was essential for fitting models with `glmmTMB()`, and it
 appears to speed model fitting. We make the transformation via factors (which
 are also integers under the hood).
+
 ```{r create_time_variable}
 first_date <- min(exceeds$sdate)
 last_date <- max(exceeds$sdate)
@@ -404,6 +412,7 @@ The code saves the model once it runs, but the model is not included in the
 GitHub repository.  The code does not detect changes in the underlying data, so
 users need to delete the models by hand if they need to be run again on new
 data.
+
 ```{r gamm_1, cache = TRUE}
 if (! file.exists("models/ccc_gamm_1.rds")) {
   print(system.time(
@@ -434,6 +443,7 @@ do so here.
 
 This model takes not quite as long to fit, but you'll  want to go do something 
 else for a while while this code runs. It takes a bit over an hour to run.
+
 ```{r gamm_2, cache = TRUE}
 if (! file.exists("models/ccc_gamm_2.rds")) {
   print(system.time(
@@ -540,9 +550,11 @@ carefully with GAMM models, as the deviance residuals can be misleading).
 Model three included a linear year term and treated years as a random factor, 
 thus effectively testing to see if there is a long term trend in probability of 
 meeting chloride standards if we pool results by year.
+
 ```{r}
 anova(ccc_gamm_3$gam)
 ```
+
 So, when you consider the years as random variables, there is no long-term trend 
 in probability to pass chlorides standards. Thus a long-term trend is present
 (in the full model) but whether you consider it important or not depends on 
@@ -649,6 +661,7 @@ z %>%
   xlim(0,1) +
   ylim(0,1)
 ```
+
 So all the models do  pretty good job predicting the observed values, except
 at site S17, where predictions are consistently higher than what we observed,
 presumably because the record for S17 is short, including only data from more
@@ -657,6 +670,7 @@ recent years.
 ```{r rm_z}
 rm(z)
 ```
+
 Models 1 and 3 generally provide nearly identical predictions, but
 for all practical purposes, the four models are all saying the 
 same thing.
@@ -684,7 +698,6 @@ plt1 <- ggplot(s, aes(Site, fprob)) +
   theme(axis.title.x = element_text(size = 9)) +
   ylim(0,1)
 ```
-
 
 ```{r plot_model_1_site_observed}
 plt1 + 
@@ -747,6 +760,7 @@ plt2 +
 ## By Year
 Only Model 1 and Model 2 tracked Year as a Fixed Factor, so we only have two
 models to compare. (Model 3 treated year as a regressor and random factor).
+
 ```{r create_year_mms}
 my_ref_grid <- ref_grid(ccc_gamm_1,  cov.reduce = median) 
 a <- summary(emmeans(my_ref_grid, ~ year_f, type = 'response'))
@@ -767,7 +781,6 @@ observed <- exceeds %>%
               upper.CL = prob + 1.96 * SE,
               .groups = 'drop')
 ```
-
 
 ```{r create_plotting_df}
 z <- tibble(Year = factor(levels(exceeds$year_f), 
@@ -791,6 +804,7 @@ z %>%
   xlim(0,1) +
   ylim(0,1)
 ```
+
 Here our marginal means do not show up so well.  The model predictions are
 highly correlated, but neither model does very well reproducing observed
 frequencies, at least for 2010 and 2012. 2010 is a year with no data from the
@@ -821,7 +835,6 @@ plt1 <- ggplot(s, aes(year_f, fprob)) +
   theme(axis.title.x = element_text(size = 9)) +
   ylim(0,1)
 ```
-
 
 ```{r}
 xanchor = 7
@@ -863,7 +876,6 @@ plt2 <- ggplot(s, aes(year_f, fprob)) +
   ylim(0,1)
 ```
 
-
 ```{r}
 plt2 + 
   stat_summary(geom = 'point',
@@ -884,6 +896,7 @@ plt2 +
 ## By Month
 Only Model 5 is fit with the `month_f` term.  When we included other predictors, 
 along with thE month, we ran into problems fitting the model.
+
 ```{r}
 my_ref_grid <- ref_grid(ccc_gamm_1,  cov.reduce = median) 
 a <- summary(emmeans(my_ref_grid, ~ month_f, type = 'response'))
@@ -910,7 +923,6 @@ observed <- exceeds %>%
              mod_5 = b$prob )
 ```
 
-
 ```{r}
 z %>%
   pivot_longer(-c(Month, observed), names_to = 'Model',
@@ -932,6 +944,7 @@ z %>%
   xlim(0,.6) +
   ylim(0,.6)
 ```
+
 There is a lot of scatter here.  The pattern is revealing.  Our "flow adjusted"
 monthly values are lower in winter and higher in summer than the observed
 values, while the simpler model without a flow term fits the observed values 
@@ -953,6 +966,7 @@ rm(z)
 
 ### Graphic
 Based on simplified model, model 5.
+
 ```{r fig.width = 4, fig.height = 3}
 s <- b %>% 
   mutate(fprob = 1-prob,

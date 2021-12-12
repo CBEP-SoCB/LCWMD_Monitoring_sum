@@ -195,7 +195,7 @@ which may bias annual summaries.
 
 Note that this data does NOT include all of the predictors used in some
 models looking at chlorides. In particular, it does not include stream
-flow estimates
+flow estimates.
 
 ``` r
 fn <- "Exceeds_Data.csv"
@@ -452,7 +452,7 @@ interaction terms achieve statistical significance.
 
 we add a random term for the years. This is problematic, since we are
 also fitting year by year model coefficients, so any trend will be
-parceled out between the linear term and a residual
+parceled out between the linear term and a residual.
 
 ``` r
 do_gamm_two_trend_2<- gamm(ClassCDO ~ Site + Year + MaxT + 
@@ -625,6 +625,7 @@ ggplot(s, aes(Site, prob)) +
 ```
 
 <img src="DO_Frequencies_Trend_Summary_files/figure-gfm/do_m2_mm_graphic_by_site-1.png" style="display: block; margin: auto;" />
+
 Probabilities and 95% confidence intervals. These intervals are wider
 because we treat year to year variation as important and independent of
 other sources of uncertainty. That makes fewer contrasts between sites

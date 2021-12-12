@@ -53,7 +53,7 @@ The Long Creek Watershed, almost three and a half square miles in area,
 is dominated by commercial land use. The Maine Mall is one of the
 largest land owners in the watershed, and it is surrounded by a range of
 commercial businesses, from medical offices, to car washes. About a
-third of the watershed in impervious surfaces like roads, parking lots,
+third of the watershed is impervious surfaces like roads, parking lots,
 and rooftops.
 
 Landowners with an acre or more of impervious area are required to get a
@@ -225,7 +225,7 @@ which may bias annual summaries.
 
 Note that this data does NOT include all of the predictors used in some
 models looking at chlorides. In particular, it does not include stream
-flow estimates
+flow estimates.
 
 ``` r
 fn <- "Exceeds_Data.csv"
@@ -311,7 +311,7 @@ We noted extreme dissolved oxygen data at the end of 2016. Values were
 both extreme and highly variable. (See discussion in the DO Analysis
 workbooks).
 
-We decide we should remove chloride and oxygen observations after
+We decided we should remove chloride and oxygen observations after
 October 15th.
 
 ``` r
@@ -429,7 +429,7 @@ rm(depth_data)
 Because low dissolved oxygen conditions are essentially absent from the
 cool and cold weather months, we can not fit binomial or Poisson GLM
 models readily to data that includes all months (due to the Hauck-Donner
-effect). WE create a smaller data set that contains only July and August
+effect). We create a smaller data set that contains only July and August
 data.
 
 ``` r
@@ -523,6 +523,7 @@ exceeds %>%
 ```
 
 <img src="DO_Frequencies_Summary_files/figure-gfm/do_site_empirical_p-1.png" style="display: block; margin: auto;" />
+
 2016 was a rough year at most sites.
 
 Note that for some year/ site combination, we never had a failure to
@@ -543,6 +544,7 @@ exceeds  %>%
 ```
 
 <img src="DO_Frequencies_Summary_files/figure-gfm/do_month_empirical_p-1.png" style="display: block; margin: auto;" />
+
 That shows that 2016 was a tough year in June, July, August, and
 September, while June and July were tough in 2018. This highlights the
 role of drought in shaping conditions in Long Creek regarding dissolved
