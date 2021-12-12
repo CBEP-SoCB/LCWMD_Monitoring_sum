@@ -111,7 +111,6 @@ sibfldnm    <- 'Data'
 parent      <- dirname(getwd())
 sibling     <- file.path(parent,sibfldnm)
 
-dir.create(file.path(getwd(), 'figures'), showWarnings = FALSE)
 dir.create(file.path(getwd(), 'models'), showWarnings = FALSE)
 ```
 

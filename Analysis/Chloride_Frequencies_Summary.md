@@ -182,7 +182,6 @@ sibfldnm    <- 'Data'
 parent      <- dirname(getwd())
 sibling     <- file.path(parent,sibfldnm)
 
-dir.create(file.path(getwd(), 'figures'), showWarnings = FALSE)
 dir.create(file.path(getwd(), 'models'), showWarnings = FALSE)
 ```
 
@@ -809,8 +808,10 @@ gam.check(ccc_gamm_1$gam)
     #> Basis dimension (k) checking results. Low p-value (k-index<1) may
     #> indicate that k is too low, especially if edf is close to k'.
     #> 
-    #>                k'  edf k-index p-value
-    #> s(FlowIndex) 9.00 6.78    0.98     0.4
+    #>                k'  edf k-index p-value   
+    #> s(FlowIndex) 9.00 6.78    0.95    0.01 **
+    #> ---
+    #> Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 
 So, model diagnostics are not obviously dreadful. (They should be
 interpreted carefully with GAMM models, as the deviance residuals can be

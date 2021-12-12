@@ -162,9 +162,6 @@ theme_set(theme_cbep())
 sibfldnm    <- 'Data'
 parent      <- dirname(getwd())
 sibling     <- file.path(parent,sibfldnm)
-
-#dir.create(file.path(getwd(), 'figures'), showWarnings = FALSE)
-#dir.create(file.path(getwd(), 'models'), showWarnings = FALSE)
 ```
 
 ## Data on Sites and Impervious Cover
@@ -378,16 +375,16 @@ printcp(do_tree)
 #> n=8624 (2354 observations deleted due to missingness)
 #> 
 #>          CP nsplit rel error  xerror     xstd
-#> 1  0.089504      0   1.00000 1.00008 0.021079
-#> 2  0.084329      1   0.91050 0.92604 0.019756
-#> 3  0.024114      2   0.82617 0.82966 0.019310
-#> 4  0.022351      3   0.80205 0.80784 0.019490
-#> 5  0.014269      5   0.75735 0.76272 0.018750
-#> 6  0.013428      7   0.72881 0.74766 0.018564
-#> 7  0.012959      9   0.70196 0.73257 0.018327
-#> 8  0.010738     11   0.67604 0.70203 0.018361
-#> 9  0.010369     12   0.66530 0.68934 0.018384
-#> 10 0.010000     13   0.65493 0.68764 0.018409
+#> 1  0.089504      0   1.00000 1.00037 0.021085
+#> 2  0.084329      1   0.91050 0.92622 0.019779
+#> 3  0.024114      2   0.82617 0.82903 0.019306
+#> 4  0.022351      3   0.80205 0.81221 0.019541
+#> 5  0.014269      5   0.75735 0.76095 0.018723
+#> 6  0.013428      7   0.72881 0.74808 0.018715
+#> 7  0.012959      9   0.70196 0.73127 0.018408
+#> 8  0.010738     11   0.67604 0.69200 0.018138
+#> 9  0.010369     12   0.66530 0.67574 0.018303
+#> 10 0.010000     13   0.65493 0.67367 0.018313
 ```
 
 These trees perform OK, with approximately 8.4 percent classification
@@ -400,7 +397,7 @@ show a graphic of the classification tree.
 plotcp(do_tree)
 ```
 
-<img src="Classification_Tree_Models_summary_files/figure-gfm/do_cp_2-1.png" style="display: block; margin: auto;" />
+<img src="Classification_Tree_Models_Summary_files/figure-gfm/do_cp_2-1.png" style="display: block; margin: auto;" />
 The relative error drops fairly linearly, so there is no great point to
 break this tree as we prune.
 
@@ -411,7 +408,7 @@ do_tree_prune <- prune(do_tree, 0.0125)
 rpart.plot(do_tree_prune)
 ```
 
-<img src="Classification_Tree_Models_summary_files/figure-gfm/plot_do_tree_1-1.png" style="display: block; margin: auto;" />
+<img src="Classification_Tree_Models_Summary_files/figure-gfm/plot_do_tree_1-1.png" style="display: block; margin: auto;" />
 
 Or, pruned more aggressively
 
@@ -420,7 +417,7 @@ do_tree_prune_2 <- prune(do_tree, 0.0165)
 rpart.plot(do_tree_prune_2)
 ```
 
-<img src="Classification_Tree_Models_summary_files/figure-gfm/plot_do_tree_2-1.png" style="display: block; margin: auto;" />
+<img src="Classification_Tree_Models_Summary_files/figure-gfm/plot_do_tree_2-1.png" style="display: block; margin: auto;" />
 (We explored several related models, but the tree structure remained
 dominated by the same factors, with similar interpretation, so we do not
 show those alternate models).
@@ -465,7 +462,7 @@ exceeds %>%
 #> Warning: Removed 285 rows containing non-finite values (stat_bin).
 ```
 
-<img src="Classification_Tree_Models_summary_files/figure-gfm/flow_histogram-1.png" style="display: block; margin: auto;" />
+<img src="Classification_Tree_Models_Summary_files/figure-gfm/flow_histogram-1.png" style="display: block; margin: auto;" />
 
 ### Low Flow in the Upper Watershed
 
@@ -489,7 +486,7 @@ exceeds %>%
 #> Warning: Removed 370 rows containing missing values (geom_point).
 ```
 
-<img src="Classification_Tree_Models_summary_files/figure-gfm/Blanchette_low_flow-1.png" style="display: block; margin: auto;" />
+<img src="Classification_Tree_Models_Summary_files/figure-gfm/Blanchette_low_flow-1.png" style="display: block; margin: auto;" />
 
 -   Days of exceptionally low upper watershed flow are frequent in
     recent years.  
@@ -520,7 +517,7 @@ exceeds %>%
 #> Warning: Removed 1 row(s) containing missing values (geom_path).
 ```
 
-<img src="Classification_Tree_Models_summary_files/figure-gfm/Blanchette_low_flow_years-1.png" style="display: block; margin: auto;" />
+<img src="Classification_Tree_Models_Summary_files/figure-gfm/Blanchette_low_flow_years-1.png" style="display: block; margin: auto;" />
 
 ## DO Model Based on Local Water Depth
 
@@ -547,14 +544,14 @@ printcp(do_depth)
 #> n=8624 (2354 observations deleted due to missingness)
 #> 
 #>         CP nsplit rel error  xerror     xstd
-#> 1 0.089504      0   1.00000 1.00006 0.021078
-#> 2 0.084329      1   0.91050 0.90037 0.019185
-#> 3 0.042665      2   0.82617 0.82664 0.019288
-#> 4 0.029920      3   0.78350 0.78990 0.019902
-#> 5 0.025702      4   0.75358 0.76602 0.018972
-#> 6 0.011533      5   0.72788 0.73528 0.018609
-#> 7 0.011377      6   0.71635 0.72412 0.018765
-#> 8 0.010000      7   0.70497 0.71811 0.018808
+#> 1 0.089504      0   1.00000 1.00040 0.021085
+#> 2 0.084329      1   0.91050 0.91401 0.019691
+#> 3 0.042665      2   0.82617 0.84364 0.019459
+#> 4 0.029920      3   0.78350 0.80253 0.020034
+#> 5 0.025702      4   0.75358 0.76959 0.019007
+#> 6 0.011533      5   0.72788 0.73638 0.018634
+#> 7 0.011377      6   0.71635 0.72418 0.018731
+#> 8 0.010000      7   0.70497 0.71995 0.018725
 ```
 
 Performance is similar to the prior model, with if anything a slightly
@@ -564,7 +561,7 @@ higher cross validation error, although with fewer steps evaluated.
 plotcp(do_depth)
 ```
 
-<img src="Classification_Tree_Models_summary_files/figure-gfm/do_cp_4-1.png" style="display: block; margin: auto;" />
+<img src="Classification_Tree_Models_Summary_files/figure-gfm/do_cp_4-1.png" style="display: block; margin: auto;" />
 
 Remember “True” means the site PASSES water quality criteria.
 
@@ -575,7 +572,7 @@ do_depth_prune <- prune(do_depth, 0.018)
 rpart.plot(do_depth_prune)
 ```
 
-<img src="Classification_Tree_Models_summary_files/figure-gfm/plot_do_depth-1.png" style="display: block; margin: auto;" />
+<img src="Classification_Tree_Models_Summary_files/figure-gfm/plot_do_depth-1.png" style="display: block; margin: auto;" />
 
 This is remarkably similar to our previous DO model, except that water
 depth replaces Site as a predictor.
@@ -606,14 +603,14 @@ printcp(psat_tree)
 #> n=8143 (2835 observations deleted due to missingness)
 #> 
 #>         CP nsplit rel error  xerror     xstd
-#> 1 0.117287      0   1.00000 1.00019 0.013807
-#> 2 0.108776      1   0.88271 0.87575 0.013165
-#> 3 0.045622      2   0.77394 0.77774 0.014322
-#> 4 0.029404      3   0.72831 0.73245 0.014848
-#> 5 0.016645      4   0.69891 0.70135 0.014134
-#> 6 0.016496      5   0.68227 0.69424 0.014180
-#> 7 0.011298      6   0.66577 0.67339 0.014038
-#> 8 0.010000      7   0.65447 0.66788 0.014036
+#> 1 0.117287      0   1.00000 1.00024 0.013807
+#> 2 0.108776      1   0.88271 0.88422 0.013532
+#> 3 0.045622      2   0.77394 0.77604 0.014300
+#> 4 0.029404      3   0.72831 0.73146 0.014839
+#> 5 0.016645      4   0.69891 0.70476 0.014221
+#> 6 0.016496      5   0.68227 0.68929 0.014167
+#> 7 0.011298      6   0.66577 0.67249 0.014041
+#> 8 0.010000      7   0.65447 0.66784 0.014064
 ```
 
 These trees perform not quite as well as the DO trees. Classification
@@ -625,7 +622,7 @@ will perform nearly as well.
 plotcp(psat_tree)
 ```
 
-<img src="Classification_Tree_Models_summary_files/figure-gfm/psat_cp_2-1.png" style="display: block; margin: auto;" />
+<img src="Classification_Tree_Models_Summary_files/figure-gfm/psat_cp_2-1.png" style="display: block; margin: auto;" />
 
 Remember “True” means the site PASSES water quality criteria.
 
@@ -633,7 +630,7 @@ Remember “True” means the site PASSES water quality criteria.
 rpart.plot(psat_tree)
 ```
 
-<img src="Classification_Tree_Models_summary_files/figure-gfm/plot_psat_tree-1.png" style="display: block; margin: auto;" />
+<img src="Classification_Tree_Models_Summary_files/figure-gfm/plot_psat_tree-1.png" style="display: block; margin: auto;" />
 
 Here the first cut is low flow conditions, corresponding roughly to flow
 below about one third of summer typical flow. The next cuts split out
@@ -675,14 +672,14 @@ printcp(chl_tree)
 #> n=8648 (2330 observations deleted due to missingness)
 #> 
 #>         CP nsplit rel error  xerror      xstd
-#> 1 0.191702      0   1.00000 1.00007 0.0063199
-#> 2 0.077182      1   0.80830 0.80864 0.0096001
-#> 3 0.021631      2   0.73112 0.73506 0.0107659
-#> 4 0.021613      4   0.68785 0.70965 0.0105429
-#> 5 0.019226      5   0.66624 0.68170 0.0104457
-#> 6 0.014972      6   0.64701 0.65790 0.0101037
-#> 7 0.010589      7   0.63204 0.63700 0.0101433
-#> 8 0.010000      8   0.62145 0.62858 0.0102737
+#> 1 0.191702      0   1.00000 1.00020 0.0063209
+#> 2 0.077182      1   0.80830 0.80864 0.0096006
+#> 3 0.021631      2   0.73112 0.73681 0.0107777
+#> 4 0.021613      4   0.68785 0.72231 0.0106394
+#> 5 0.019226      5   0.66624 0.67577 0.0103601
+#> 6 0.014972      6   0.64701 0.65928 0.0100916
+#> 7 0.010589      7   0.63204 0.64392 0.0101623
+#> 8 0.010000      8   0.62145 0.63320 0.0102985
 ```
 
 These trees perform still less well….
@@ -694,7 +691,7 @@ but not as much as for PctSat.
 plotcp(chl_tree)
 ```
 
-<img src="Classification_Tree_Models_summary_files/figure-gfm/chl_cp_2-1.png" style="display: block; margin: auto;" />
+<img src="Classification_Tree_Models_Summary_files/figure-gfm/chl_cp_2-1.png" style="display: block; margin: auto;" />
 
 Remember “True” means the site PASSES water quality criteria.
 
@@ -702,7 +699,7 @@ Remember “True” means the site PASSES water quality criteria.
 rpart.plot(chl_tree)
 ```
 
-<img src="Classification_Tree_Models_summary_files/figure-gfm/plot_chl_tree_CCC-1.png" style="display: block; margin: auto;" />
+<img src="Classification_Tree_Models_Summary_files/figure-gfm/plot_chl_tree_CCC-1.png" style="display: block; margin: auto;" />
 Here, location controls risk to a high degree. Just over a third of all
 days at all sites passed the lower chloride (CCC) threshold. That
 dropped to under a fifth at our most vulnerable sites, especially the
@@ -730,15 +727,15 @@ printcp(chl_tree_2)
 #> n=8648 (2330 observations deleted due to missingness)
 #> 
 #>         CP nsplit rel error  xerror     xstd
-#> 1 0.055124      0   1.00000 1.00023 0.058341
-#> 2 0.025619      2   0.88975 0.89175 0.049017
-#> 3 0.019038      5   0.81289 0.82967 0.049156
-#> 4 0.016235      6   0.79386 0.82091 0.047802
-#> 5 0.014514      7   0.77762 0.81456 0.047230
-#> 6 0.014287      8   0.76311 0.80891 0.047169
-#> 7 0.011952      9   0.74882 0.80019 0.046365
-#> 8 0.010856     11   0.72492 0.79755 0.045956
-#> 9 0.010000     12   0.71406 0.79146 0.045819
+#> 1 0.055124      0   1.00000 1.00018 0.058338
+#> 2 0.025619      2   0.88975 0.89136 0.049128
+#> 3 0.019038      5   0.81289 0.83730 0.049195
+#> 4 0.016235      6   0.79386 0.83205 0.048580
+#> 5 0.014514      7   0.77762 0.83482 0.047610
+#> 6 0.014287      8   0.76311 0.82925 0.047390
+#> 7 0.011952      9   0.74882 0.82916 0.047018
+#> 8 0.010856     11   0.72492 0.80877 0.046009
+#> 9 0.010000     12   0.71406 0.81630 0.046308
 ```
 
 These trees perform very well. Classification error is on the order of
@@ -749,7 +746,7 @@ splits, so we prune the tree.
 plotcp(chl_tree_2)
 ```
 
-<img src="Classification_Tree_Models_summary_files/figure-gfm/chl_cp_4-1.png" style="display: block; margin: auto;" />
+<img src="Classification_Tree_Models_Summary_files/figure-gfm/chl_cp_4-1.png" style="display: block; margin: auto;" />
 
 ``` r
 chl_tree_2 <- prune(chl_tree_2, 0.02)
@@ -761,7 +758,7 @@ Remember “True” means the site PASSES water quality criteria.
 rpart.plot(chl_tree_2)
 ```
 
-<img src="Classification_Tree_Models_summary_files/figure-gfm/plot_chl_tre_CMC-1.png" style="display: block; margin: auto;" />
+<img src="Classification_Tree_Models_Summary_files/figure-gfm/plot_chl_tre_CMC-1.png" style="display: block; margin: auto;" />
 This tree suggests violations of the more stringent chloride standards
 almost never happened, except at site S01, and they were relatively rare
 there except in our two worst years, under low flow conditions.
@@ -789,8 +786,8 @@ printcp(temp_tree)
 #> n=10900 (78 observations deleted due to missingness)
 #> 
 #>         CP nsplit rel error xerror    xstd
-#> 1 0.026263      0   1.00000 1.0002 0.24200
-#> 2 0.010000      2   0.94747 1.0522 0.24307
+#> 1 0.026263      0   1.00000 1.0003 0.24203
+#> 2 0.010000      2   0.94747 1.0298 0.24254
 ```
 
 Remember “True” means the site PASSES water quality criteria.
@@ -799,7 +796,7 @@ Remember “True” means the site PASSES water quality criteria.
 rpart.plot(temp_tree)
 ```
 
-<img src="Classification_Tree_Models_summary_files/figure-gfm/plot_temp_tree-1.png" style="display: block; margin: auto;" />
+<img src="Classification_Tree_Models_Summary_files/figure-gfm/plot_temp_tree-1.png" style="display: block; margin: auto;" />
 
 That’s just too simple. What the tree tells us is that:  
 \* Violations of the Acute threshold are exceptionally rare.  
