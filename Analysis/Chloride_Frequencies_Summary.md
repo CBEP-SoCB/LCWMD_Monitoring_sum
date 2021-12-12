@@ -808,8 +808,8 @@ gam.check(ccc_gamm_1$gam)
     #> Basis dimension (k) checking results. Low p-value (k-index<1) may
     #> indicate that k is too low, especially if edf is close to k'.
     #> 
-    #>                k'  edf k-index p-value   
-    #> s(FlowIndex) 9.00 6.78    0.95    0.01 **
+    #>                k'  edf k-index p-value  
+    #> s(FlowIndex) 9.00 6.78    0.96    0.06 .
     #> ---
     #> Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 

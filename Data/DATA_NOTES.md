@@ -7,71 +7,15 @@
   
 ## Data Files in This Folder
 
-1.  **Sonde_Data.csv**
-
-A large CSV file, containing data collected principally by sondes.  Data was 
-collected every 15 minutes or 1 hour, depending on the deployment.
+1.  **Full_Data.csv** -- Data derived from *Daily_data.csv* containing
+    weighted sums for time series analysis.  The data contains missing values
+    where there are gaps in the data, so that autocorrelation-based regression
+    models rely only on data where lag data are available.
 
 Column Name | Contents                   | Units / Values
 ------------|----------------------------|--------------
 Unnamed     | Arbitrary sequence numbers |  
-DT          | Date and Time              | '%m/%d/%Y %H:%M'
-Chl	        | Chloride, Calculated       | mg/l
-D	          | Depth                      | meters
-DO          | Dissolved Oxygen           | mg/l
-PctSat      | Oxygen percent saturation  | Percent
-pH          | pH                         | NBS pH Scale (Sonde-based)
-Press	      | Water Pressure             | kPa
-SpCond	    | Specific Conductance       | uS/cm
-T	          | Temperature                | Degrees C
-Precip	    | Precipitation  (Jetport)   | inches
-Site        | Monitoring Location Code   |
-------------|----------------------------|--------------
-
-Precipitation data is derived from daily published rainfall totals for the 
-Portland jetport, and are daily total values.
-
-Chloride values were calculated from specific conductance based on a multi-year
-specific conductance-chloride linear regression. R^2^ values are on the order of
-0.9.  Detailed statistical analysis shows that the relationship is not strictly
-linear, but deviations from linearity have little practical import. The presence
-of outliers also suggests some care in interpreting individual extreme values.
-
-2.  **Site_IC_Data.csv** --  Simplified data of
-    direct and cumulative subwatershed area and imperviousness for each Long
-    Creek subwatershed / Monitoring Location.  Entered by hand from a table in a
-    report by GZA to LCWMD, with cumulative watershed imperviousness added.
-
-Column Name | Contents                   | Units / Values  
-------------|----------------------------|--------------  
-Site        | Monitoring Location Code   |    
-Subwatershed | Text name of location     | 
-Area_ac	    | Area of subwatershed       | Acres
-IC_ac	      | Impervious area in subwatershed | Acres
-CumArea_ac	| Cumulative watershed area including areas upstream | Acres
-CumIC_ac	  | Cumulative watershed imperviousness | Acres
-PctIC	      | Percent of impervious cover this subwatershed | Percent
-CumPctIC    | Cumulative percent imperviousness  | Percent
-------------|----------------------------|--------------  
-
-3.  **Weather Data.csv**  --  Selected Weather data (including average wind
-    speeds, precipitation, snow, and temperature), along with lagged and
-    weighted precipitation data (mostly lagged and weighted log of
-    precipitation).  Data was downloaded from 
-    
-    CBEP uses a custom Python program to download data from NOAA's online data
-    APIs.  Specifically, data were accessed through NOAA's National 
-    Centers for Environmental Information. We downloaded daily (GHCND) weather 
-    summaries via API v2. Information on this API is available here:
-    https://www.ncdc.noaa.gov/cdo-web/webservices/v2
-
-    Documentation on contents of specific datasets is available at
-    https://www.ncdc.noaa.gov/cdo-web/datasets
-
-
-Column Name | Contents                   | Units / Values  
-------------|----------------------------|--------------  
-Unnamed     | Arbitrary sequence numbers |  
+Site        | Monitoring Location Code   |   
 sdate       | Date                       | '%m/%d/%Y'  
 Year        | Year, as an integer        |  
 Month       | As an integer 1 = January  |
@@ -79,43 +23,18 @@ DOY         | Julian Day                 | 1:366
 Precip      | Daily precipitation        | mm  
 MaxT        | Daily maximum air temperature | Degrees C
 lPrecip     | natural log of Precip      |
-wPrecip	    | Weighted value of prior 10 days precipitation  | mm
+wPrecip	    | Weighted value of prior 10 days precipitation  | tenths of mm
 wlPrecip    | Weighted values of log of prior 10 days precipitation |  
-------------|----------------------------|--------------  
+Chl_Median  | Median daily chloride      | mg/l
+D_Median	  | Median Daily depth         | meters
+lD_Median	  | Log of D_median            |  
+DO_Median	  | Median daily dissolved oxygen | mg/l
+PctSat_Median | Median daily saturation  | percent
+pH_Median	  | Median daily pH            |  
+spCond_Median | median daily specific conductance | uS/cm 
+T_Median    | Median daily water temperature | Degrees C
 
-The NOAA API provides rainfall in tenths of millimeters.  We converted to 
-millimeters in this file.
-
-Weighted precipitation values use exponential weighting, with a rate parameter
-of $0.8$.  Thus yesterday's precipitation counts as $80%$ of today's rainfall,
-while the day before counts as $0.8 /times 0.8 = 0.64$ times as much as today's
-rainfall, and so on.  Weighted rainfall *does not include* the present-day's
-precipitation.
-
-4.  **Daily_Data.csv**  
-A large CSV file, containing daily summaries of the data contained in 
-`Sonde_Data.csv`.  The summaries include: minimum (min), maximum (max), median, 
-mean, standard  deviation ('sd'), interquartile range ('IQr') and sample size 
-('n') for all numeric values (except precipitation)  found in `sonde_data.csv`. 
-The order of columns is 
-
-Column Name | Contents                   | Units / Values  
-------------|----------------------------|--------------  
-Site        | Monitoring Location Code   |  
-sdate       | Date                       | '%m/%d/%Y'  
-Values      | Summaries as {parameter}_{function} | 
-Year        | Year, as an integer        |  
-Month       | As an integer 1 = January  |  
-Precip      | Daily precipitation        | tenths of mm    
-pPrecip     | Previous day precipitation | tenths of mm
-MaxT        | Daily maximum air temp.    | tenths of degree C
-------------|----------------------------|--------------  
-
-We replaced the precipitation data from the `sonde_data.csv` file with
-newly downloaded weather data. We added daily maximum temperature data from the 
-same source.  Both are in tenths of their customary units.
-
-5.  **Exceeds_Data.csv**  -- Data derived from *Daily_Data.csv* containing flags
+2.  **Exceeds_Data.csv**  -- Data derived from *Daily_Data.csv* containing flags
     that indicate whether conditions that day exceeded acute or chronic exposure
     thresholds, even once. Thresholds for Chlorides, DO, and Percent Saturation
     are derived from Maine water quality criteria.  Temperature thresholds are
@@ -181,15 +100,41 @@ Note that the depth data (`D_Median`) is unique to each monitoring station, as
 it depends on local stream morphology and flow dynamics.
 
 
-6.  **Full_Data.csv** -- Data derived from *Daily_data.csv* containing
-    weighted sums for time series analysis.  The data contains missing values
-    where there are gaps in the data, so that autocorrelation-based regression
-    models rely only on data where lag data are available.
+3.  **Site_IC_Data.csv** --  Simplified data of
+    direct and cumulative subwatershed area and imperviousness for each Long
+    Creek subwatershed / Monitoring Location.  Entered by hand from a table in a
+    report by GZA to LCWMD, with cumulative watershed imperviousness added.
 
-Column Name | Contents                   | Units / Values
-------------|----------------------------|--------------
+Column Name | Contents                   | Units / Values  
+------------|----------------------------|--------------  
+Site        | Monitoring Location Code   |    
+Subwatershed | Text name of location     | 
+Area_ac	    | Area of subwatershed       | Acres
+IC_ac	      | Impervious area in subwatershed | Acres
+CumArea_ac	| Cumulative watershed area including areas upstream | Acres
+CumIC_ac	  | Cumulative watershed imperviousness | Acres
+PctIC	      | Percent of impervious cover this subwatershed | Percent
+CumPctIC    | Cumulative percent imperviousness  | Percent
+------------|----------------------------|--------------  
+
+4.  **Weather Data.csv**  --  Selected Weather data (including average wind
+    speeds, precipitation, snow, and temperature), along with lagged and
+    weighted precipitation data (mostly lagged and weighted log of
+    precipitation).  Data was downloaded from 
+    
+    CBEP uses a custom Python program to download data from NOAA's online data
+    APIs.  Specifically, data were accessed through NOAA's National 
+    Centers for Environmental Information. We downloaded daily (GHCND) weather 
+    summaries via API v2. Information on this API is available here:
+    https://www.ncdc.noaa.gov/cdo-web/webservices/v2
+
+    Documentation on contents of specific datasets is available at
+    https://www.ncdc.noaa.gov/cdo-web/datasets
+
+
+Column Name | Contents                   | Units / Values  
+------------|----------------------------|--------------  
 Unnamed     | Arbitrary sequence numbers |  
-Site        | Monitoring Location Code   |   
 sdate       | Date                       | '%m/%d/%Y'  
 Year        | Year, as an integer        |  
 Month       | As an integer 1 = January  |
@@ -197,18 +142,22 @@ DOY         | Julian Day                 | 1:366
 Precip      | Daily precipitation        | mm  
 MaxT        | Daily maximum air temperature | Degrees C
 lPrecip     | natural log of Precip      |
-wPrecip	    | Weighted value of prior 10 days precipitation  | tenths of mm
+wPrecip	    | Weighted value of prior 10 days precipitation  | mm
 wlPrecip    | Weighted values of log of prior 10 days precipitation |  
-Chl_Median  | Median daily chloride      | mg/l
-D_Median	  | Median Daily depth         | meters
-lD_Median	  | Log of D_median            |  
-DO_Median	  | Median daily dissolved oxygen | mg/l
-PctSat_Median | Median daily saturation  | percent
-pH_Median	  | Median daily pH            |  
-spCond_Median | median daily specific conductance | uS/cm 
-T_Median    | Median daily water temperature | Degrees C
+------------|----------------------------|--------------  
+
+The NOAA API provides rainfall in tenths of millimeters.  We converted to 
+millimeters in this file.
+
+Weighted precipitation values use exponential weighting, with a rate parameter
+of $0.8$.  Thus yesterday's precipitation counts as $80%$ of today's rainfall,
+while the day before counts as $0.8 /times 0.8 = 0.64$ times as much as today's
+rainfall, and so on.  Weighted rainfall *does not include* the present-day's
+precipitation.
+
+
  
-7.  **grab_data** a folder containing several csv files.  Files contain subsets
+5.  **grab_data** a folder containing several csv files.  Files contain subsets
     by subject area of data derived from the original excel data sheets. Data
     includes grab sample data only (no data logger or other "continuous" data).
 
@@ -303,6 +252,3 @@ taskcode    | Category                   | Baseflow, Stormwater, Spring Melt
         *  Turbidity
         *  Dissolved Oxygen
         *  Dissolved Oxygen Saturation
-    
-    
-

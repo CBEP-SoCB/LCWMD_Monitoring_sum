@@ -622,7 +622,7 @@ gam.check(do_gamm$gam)
     #> indicate that k is too low, especially if edf is close to k'.
     #> 
     #>                k'  edf k-index p-value    
-    #> s(FlowIndex) 9.00 7.38    0.87  <2e-16 ***
+    #> s(FlowIndex) 9.00 7.38    0.89  <2e-16 ***
     #> ---
     #> Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 

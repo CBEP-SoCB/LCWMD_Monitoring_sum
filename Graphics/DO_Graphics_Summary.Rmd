@@ -117,9 +117,9 @@ Site_IC_Data
 ## Load Main Data
 Read in the data from the Derived Data folder.
 
-Note that I filter out data from 2019 because that is only a partial year, 
-which might affect estimation of things like seasonal trends.  We could add it 
-back in, but with care....
+We filter out data from 2019 because that is only a partial year, which might
+affect estimation of things like seasonal trends.  We could add it back in, but
+with care.
 
 ```{r}
 fn <- "Full_Data.csv"
@@ -144,7 +144,6 @@ rm(fn, fpath, parent, sibling, sibfldnm)
 ```
 
 ## Data Correction
-
 ### Anomalous Depth Values
 Several depth observations in the record appear highly unlikely. In particular,
 several observations show daily median water depths over 15 meters. And
@@ -163,6 +162,7 @@ transducer appears likely.
 We remove these extreme values.  The other daily medians in May and June of 2015
 appear reasonable, and we leave them in place, although given possible 
 instability of the pressure sensors, it might make sense to remove them all.
+
 ```{r}
 full_data <- full_data %>%
   mutate(D_Median = if_else(D_Median > 4, NA_real_, D_Median),
@@ -174,6 +174,7 @@ The data includes just a single chloride observation from site S06B from
 any year other than 2013.  While we do not know if the data point is legitimate
 or not, it has very high leverage in several models, and we suspect a 
 transcription error of some sort.
+
 ```{r Show_bad_datum, fig.width = 3, fig.height = 2}
 full_data %>%
   filter(Site == 'S06B') %>%
@@ -182,6 +183,7 @@ full_data %>%
 ```
 
 We remove the Chloride value from the data.
+
 ```{r}
 full_data <- full_data %>%
   mutate(DO_Median = if_else(Site == 'S06B' & Year > 2014,
@@ -265,6 +267,7 @@ predictor is likely to have a smaller sample size.
 
 # Initial GAMM Model
 This model is likely to take approximately 15 minutes to run.
+
 ```{r first_gamm, cache = TRUE}
 if (! file.exists("models/do_gamm.rds")) {
   print(
@@ -399,7 +402,6 @@ plt2 <- full_data %>%
   theme_cbep(base_size = 12)
 ```
 
-
 ```{r do_months_box_annot}
 xanchor = 5
 yanchor = 12.5
@@ -476,6 +478,5 @@ plt3 +
            hjust = 0, size = 3, label = '75th percentile')
 
 ggsave('figures/do_year_violin_w_box_annot.pdf', device = cairo_pdf, width = 5, height = 4)
-
 ```
  
